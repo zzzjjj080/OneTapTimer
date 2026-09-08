@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>method</key><string>app-store-connect</string>
+  <key>teamID</key><string>A7WA598R44</string>
+  <key>signingStyle</key><string>manual</string>
+  <key>signingCertificate</key><string>Apple Distribution</string>
+  <key>provisioningProfiles</key>
+  <dict>
+    <key>com.zzzjjj080.OneTapTimer</key><string>OneTapTimer App Store</string>
+    <key>com.zzzjjj080.OneTapTimer.watchkitapp</key><string>OneTapTimer Watch App Store</string>
+    <key>com.zzzjjj080.OneTapTimer.watchkitapp.Widget</key><string>OneTapTimer WatchWidget App Store</string>
+  </dict>
+  <key>uploadSymbols</key><true/>
+  <key>destination</key><string>upload</string>
+</dict>
+</plist>

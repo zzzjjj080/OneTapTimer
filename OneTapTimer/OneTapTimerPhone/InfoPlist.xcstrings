@@ -1,0 +1,9 @@
+{
+  "sourceLanguage" : "ja",
+  "strings" : {
+    "CFBundleDisplayName" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "One Tap Timer" } } }
+    }
+  },
+  "version" : "1.0"
+}

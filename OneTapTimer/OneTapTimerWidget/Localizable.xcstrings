@@ -1,0 +1,10 @@
+{
+  "sourceLanguage" : "ja",
+  "strings" : {
+    "ワンタップタイマー" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "One Tap Timer" } } } },
+    "ワンタップ" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "One Tap" } } } },
+    "押すと始まる" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Tap to start" } } } },
+    "タップするとタイマーが始まります。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Tap to start the timer." } } } }
+  },
+  "version" : "1.0"
+}

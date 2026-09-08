@@ -1,0 +1,10 @@
+{
+  "sourceLanguage" : "ja",
+  "strings" : {
+    "CFBundleDisplayName" : {
+      "comment" : "ホーム画面と文字盤に出る名前。短くしないと切れる",
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "One Tap" } } }
+    }
+  },
+  "version" : "1.0"
+}

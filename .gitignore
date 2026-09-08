@@ -1,0 +1,8 @@
+.build/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+.DS_Store
+.sim-watch
+.sim-phone
+icon-sheet.png

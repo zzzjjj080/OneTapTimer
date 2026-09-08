@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ワンタップタイマー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Nunito:wght@700;800;900&family=Rubik:wght@500;700;800&family=Chakra+Petch:wght@500;600;700&family=Big+Shoulders+Display:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  /* ───── 見本台（ページ側）。時計の画面は黒なので、台は暖かい暗灰で統一する ───── */
+  :root{
+    --stage:#1B1917;
+    --stage-2:#242220;
+    --paper:#EDE7DC;
+    --paper-dim:#9A928A;
+    --rule:rgba(237,231,220,.14);
+    --focus:#FFC46B;
+    --pt:1.25px;          /* 1pt = 1.25px。46mm は 208×248pt */
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{color-scheme:dark}
+  body{
+    background:var(--stage);color:var(--paper);
+    font-family:"Zen Kaku Gothic New",system-ui,-apple-system,"Hiragino Sans",sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding:36px 28px 64px;
+  }
+  header{max-width:1180px;margin:0 auto 28px;display:grid;grid-template-columns:1fr auto;gap:18px;align-items:end}
+  .eyebrow{font-size:12px;letter-spacing:.14em;color:var(--paper-dim);text-transform:uppercase;margin-bottom:8px}
+  h1{font-size:34px;font-weight:700;letter-spacing:.01em;line-height:1.15;text-wrap:balance}
+  .lede{margin-top:10px;font-size:15px;line-height:1.7;color:var(--paper-dim);max-width:34em}
+  .lede b{color:var(--paper);font-weight:500}
+  .global{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+  .global .now{font-size:13px;color:var(--paper-dim)}
+  .global .now b{color:var(--paper);font-weight:700;font-variant-numeric:tabular-nums;margin-left:6px;font-size:15px}
+  .btn{
+    font:inherit;font-size:14px;font-weight:500;color:var(--paper);
+    background:none;border:1px solid var(--rule);border-radius:999px;
+    padding:9px 16px;cursor:pointer;transition:background-color .15s ease,transform .1s ease;
+  }
+  .btn:hover{background:rgba(237,231,220,.08)}
+  .btn:active{transform:scale(.97)}
+  .btn:focus-visible,button:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+
+  .stage{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:34px 26px}
+  figure{display:flex;flex-direction:column;align-items:center;gap:16px}
+  figcaption{text-align:center;max-width:260px}
+  figcaption .name{font-size:17px;font-weight:700;letter-spacing:.02em}
+  figcaption .name small{font-weight:500;color:var(--paper-dim);margin-left:8px;font-size:12px;letter-spacing:.1em}
+  figcaption p{margin-top:6px;font-size:13px;line-height:1.65;color:var(--paper-dim)}
+
+  /* ───── 時計の筐体 ───── */
+  .watch{
+    position:relative;
+    width:calc(208 * var(--pt));height:calc(248 * var(--pt));
+    padding:calc(7 * var(--pt));
+    background:linear-gradient(160deg,#3a3632,#141312 60%);
+    border-radius:calc(58 * var(--pt));
+    box-shadow:0 30px 50px -20px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.12);
+  }
+  .watch::before{ /* デジタルクラウン */
+    content:"";position:absolute;right:calc(-7 * var(--pt));top:calc(58 * var(--pt));
+    width:calc(9 * var(--pt));height:calc(36 * var(--pt));
+    background:linear-gradient(90deg,#2b2926,#4a4642);border-radius:4px;
+  }
+  .watch::after{ /* サイドボタン */
+    content:"";position:absolute;right:calc(-5 * var(--pt));top:calc(112 * var(--pt));
+    width:calc(6 * var(--pt));height:calc(48 * var(--pt));
+    background:#2b2926;border-radius:3px;
+  }
+  .screen{
+    position:relative;width:100%;height:100%;overflow:hidden;
+    border-radius:calc(50 * var(--pt));
+    background:#000;color:var(--ink);
+    font-family:var(--digits),system-ui,sans-serif;
+    cursor:pointer;user-select:none;-webkit-user-select:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .screen:focus-visible{outline:2px solid var(--focus);outline-offset:4px}
+  .clock{ /* 上端の16〜18ptはシステムの時計が出る領域 */
+    position:absolute;top:calc(9 * var(--pt));right:calc(24 * var(--pt));
+    font:600 calc(11 * var(--pt))/1 "Zen Kaku Gothic New",sans-serif;
+    color:var(--ink-dim);letter-spacing:.02em;font-variant-numeric:tabular-nums;z-index:3;
+  }
+  .face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .digits{font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.02em}
+  .label{
+    font:500 calc(11 * var(--pt))/1 "Zen Kaku Gothic New",sans-serif;
+    color:var(--ink-dim);letter-spacing:.06em;
+  }
+  .gear{ /* 上部・左。時刻の左側で、画面の色に溶ける薄いガラスの円 */
+    position:absolute;left:calc(14 * var(--pt));top:calc(10 * var(--pt));
+    width:calc(34 * var(--pt));height:calc(34 * var(--pt));
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);
+    color:rgba(255,255,255,.72);cursor:pointer;z-index:4;
+    border-radius:999px;transition:background-color .15s ease,color .15s ease;
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  }
+  .gear:hover{background:rgba(255,255,255,.24);color:#fff}
+  .gear svg{width:calc(18 * var(--pt));height:calc(18 * var(--pt));fill:currentColor}
+
+  /* 再スタートの一瞬の光。触覚の代わり */
+  .pulse{position:absolute;inset:0;background:var(--ink);opacity:0;pointer-events:none;z-index:2}
+  .screen.pulsing .pulse{animation:pulse .32s ease-out}
+  @keyframes pulse{0%{opacity:.55}100%{opacity:0}}
+  .screen.finishing .pulse{animation:finish .9s ease-out}
+  @keyframes finish{0%{opacity:.7}30%{opacity:.1}45%{opacity:.6}100%{opacity:0}}
+
+  /* ───── 設定の重ね画面（4案共通の骨。色と書体は各案に従う） ───── */
+  .settings{
+    position:absolute;inset:0;background:#000;z-index:5;
+    display:none;flex-direction:column;align-items:center;
+    padding:calc(22 * var(--pt)) calc(14 * var(--pt)) calc(10 * var(--pt));
+    cursor:default;
+  }
+  .screen.setting .settings{display:flex}
+  .settings .label{margin-bottom:calc(4 * var(--pt))}
+  .settings .value{
+    font-size:calc(40 * var(--pt));font-weight:700;line-height:1.05;
+    font-variant-numeric:tabular-nums;color:var(--ink);letter-spacing:-.02em;
+  }
+  .settings .value small{font-size:calc(14 * var(--pt));font-weight:500;letter-spacing:0;margin-left:2px}
+  .steps{display:flex;gap:calc(10 * var(--pt));margin:calc(8 * var(--pt)) 0 calc(8 * var(--pt))}
+  .steps button{
+    width:calc(52 * var(--pt));height:calc(36 * var(--pt));border-radius:999px;
+    border:none;background:var(--well);color:var(--ink);
+    font:700 calc(22 * var(--pt))/1 "Nunito",sans-serif;cursor:pointer;
+  }
+  .steps button:active{filter:brightness(1.3)}
+  .chips{display:flex;flex-wrap:wrap;justify-content:center;gap:calc(4 * var(--pt)) calc(5 * var(--pt));width:100%}
+  .chips button{
+    border:none;border-radius:999px;background:var(--well);color:var(--ink-dim);
+    font:500 calc(10.5 * var(--pt))/1 "Zen Kaku Gothic New",sans-serif;
+    padding:calc(6 * var(--pt)) calc(8 * var(--pt));cursor:pointer;letter-spacing:.02em;
+  }
+  .chips button.on{background:var(--accent);color:#000}
+  .go{
+    margin-top:auto;width:100%;height:calc(34 * var(--pt));border-radius:999px;border:none;
+    background:var(--accent);color:#000;cursor:pointer;
+    font:700 calc(13 * var(--pt))/1 "Zen Kaku Gothic New",sans-serif;letter-spacing:.04em;
+  }
+  .close{
+    position:absolute;top:calc(6 * var(--pt));left:calc(10 * var(--pt));
+    width:calc(60 * var(--pt));height:calc(24 * var(--pt));white-space:nowrap;
+    background:none;border:none;color:var(--ink-dim);cursor:pointer;
+    font:500 calc(11 * var(--pt))/1 "Zen Kaku Gothic New",sans-serif;text-align:left;
+  }
+  .close:hover{color:var(--ink)}
+
+  /* ───── B. ドレイン ───── */
+  .v-drain{--ink:#F2F7F6;--ink-dim:#7FA6A3;--accent:#2BC2B7;--well:#122A2C;--digits:"Rubik"}
+  .v-drain .screen{background:#000;transition:background-color .5s ease}
+  .v-drain .liquid{
+    position:absolute;left:0;right:0;bottom:0;height:100%;
+    background:linear-gradient(180deg,#31D4C8,#12958D);
+    transition:background .4s ease;
+  }
+  .v-drain .liquid::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:rgba(255,255,255,.55)}
+  .v-drain .digits{font-size:calc(66 * var(--pt));font-weight:800;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.35);position:relative}
+  .v-drain .digits.short{font-size:calc(96 * var(--pt));letter-spacing:-.04em}
+  .v-drain .label{color:rgba(255,255,255,.75);margin-top:calc(6 * var(--pt));position:relative}
+  .v-drain .gear{color:rgba(255,255,255,.7)}
+  .v-drain .clock{color:rgba(255,255,255,.8)}
+  .v-drain.last .liquid{background:linear-gradient(180deg,#FFB13B,#E0780A)}
+  .v-drain.done .screen{background:#E9F3F1}
+  .v-drain.done .liquid{height:0!important}
+  .v-drain.done .digits{color:#0D3A3B;text-shadow:none}
+  .v-drain.done .label{color:#3F6D6C}
+  .v-drain.done .clock{color:#3F6D6C}
+  .v-drain.done .gear{background:rgba(13,58,59,.08);border-color:rgba(13,58,59,.14);color:#3F6D6C}
+
+  .legend{max-width:1180px;margin:44px auto 0;padding-top:22px;border-top:1px solid var(--rule);
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 28px}
+  .legend div{font-size:13px;line-height:1.65;color:var(--paper-dim)}
+  .legend b{display:block;color:var(--paper);font-weight:700;margin-bottom:2px}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+  @media (max-width:640px){body{padding:24px 16px 48px}header{grid-template-columns:1fr}.global{align-items:flex-start}h1{font-size:28px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="eyebrow">Apple Watch · 46mm · 実寸比 · 決定版（B ドレイン）</div>
+    <h1>ワンタップタイマー</h1>
+    <p class="lede">
+      <b>開いた瞬間に始まり</b>、終わったら<b>一度だけ震えて</b>止まる。
+      画面をタップすると最初から。左上の歯車で時間を変える。1分を切ったら秒だけを出す。
+      3台とも本物のタイマーとして動いている（左から：走っている／設定を開いた／終わった）。
+    </p>
+  </div>
+  <div class="global">
+    <div class="now">いまの設定<b id="nowLabel">1分30秒</b></div>
+    <button class="btn" id="restartAll">3台いっせいに再スタート</button>
+  </div>
+</header>
+
+<section class="stage" id="stage"></section>
+
+<section class="legend">
+  <div><b>起動 → 即スタート</b>文字盤のコンプリケーションを押すと、設定画面を経ずに走り出す。iPhone の画面も同じ。</div>
+  <div><b>終わりの合図</b>強めの触覚を1回だけ。鳴り続けないので、放っておいてよい。腕を下ろしていても通知で届く。</div>
+  <div><b>時間の範囲</b>10秒〜60分。10秒刻み→（1分から）10秒→（5分から）30秒→（20分から）1分。よく使う値はチップから1タップ。</div>
+  <div><b>画面上部の余白</b>時計の右上にはシステムの時刻が出る。どの案もそこを避けて置いている。</div>
+</section>
+
+<script>
+/* ───────────── 共有の状態 ───────────── */
+const MIN = 10, MAX = 3600, DEFAULT = 90;
+const CHIPS = [30, 60, 90, 120, 180, 300, 600];
+let duration = DEFAULT;
+try { const v = +localStorage.getItem("ott.duration"); if (v >= MIN && v <= MAX) duration = v; } catch (e) {}
+function saveDuration(v) { duration = v; try { localStorage.setItem("ott.duration", v); } catch (e) {} ; document.getElementById("nowLabel").textContent = jp(v); }
+
+const pad = n => String(n).padStart(2, "0");
+/* 残り秒は切り上げ。1:30 と出て、次の瞬間に 1:29 になる（0.4秒残りで 0:00 と出さない） */
+const ceilS = s => Math.max(0, Math.ceil(s - 1e-6));
+const mmss = s => { s = ceilS(s); return Math.floor(s / 60) + ":" + pad(s % 60); };
+const jp = s => { const m = Math.floor(s / 60), r = s % 60; return (m ? m + "分" : "") + (r || !m ? r + "秒" : ""); };
+/* 刻み幅は値の大きさで変える。90秒あたりを10秒で合わせやすく */
+function step(v, dir) {
+  const s = v < 60 ? 10 : v < 300 ? 10 : v < 1200 ? 30 : 60;
+  const n = dir > 0 ? Math.floor(v / s) * s + s : Math.ceil(v / s) * s - s;
+  return Math.min(MAX, Math.max(MIN, n));
+}
+
+/* 触覚と音の代わり。ブラウザではこれが限界（本物は WKInterfaceDevice の触覚） */
+let ac = null;
+function chirp() {
+  if (navigator.vibrate) navigator.vibrate([90, 60, 220]);
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    if (ac.state === "suspended") return;
+    const t = ac.currentTime;
+    [0, .18].forEach((d, i) => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = "sine"; o.frequency.value = i ? 660 : 880;
+      g.gain.setValueAtTime(.25, t + d); g.gain.exponentialRampToValueAtTime(.0001, t + d + .22);
+      o.connect(g); g.connect(ac.destination); o.start(t + d); o.stop(t + d + .25);
+    });
+  } catch (e) {}
+}
+document.addEventListener("pointerdown", () => { try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); ac.resume(); } catch (e) {} }, { once: true });
+
+/* ───────────── 4つの案 ───────────── */
+const GEAR = '<svg viewBox="0 0 24 24"><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.7 7.7 0 0 0-1.7-1L15 3.3H9l-.4 2.6a7.7 7.7 0 0 0-1.7 1l-2.5-1-2 3.5L4.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.7 7.7 0 0 0 1.7 1l.4 2.6h6l.4-2.6a7.7 7.7 0 0 0 1.7-1l2.5 1 2-3.5L19.4 13zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>';
+
+const VARIANTS = [
+  {
+    id: "drain", name: "ドレイン", tag: "B",
+    note: "画面全体が水位のように下がる。数字を読まなくても、色の面積で「あとどれくらい」が分かる。1分を切ると秒だけになり、終わると画面が白く抜ける。",
+    face: `<div class="liquid"></div><div class="face"><div class="digits">1:30</div><div class="label">のこり</div></div>`,
+    init() {},
+    draw(el, f, left, done) {
+      el.querySelector(".liquid").style.height = (f * 100) + "%";
+      const s = ceilS(left), d = el.querySelector(".digits");
+      d.textContent = s < 60 ? String(s) : mmss(left);
+      d.classList.toggle("short", s < 60);
+      el.querySelector(".label").textContent = done ? "おわり" : (s < 60 ? "秒" : "のこり");
+    }
+  },
+];
+
+/* ───────────── 各台のタイマー ───────────── */
+const units = [];
+const stage = document.getElementById("stage");
+
+const SCENES = [
+  { title: "走っている", sub: "開いた瞬間にこの画面。タップで最初から" },
+  { title: "設定を開いた", sub: "歯車を押した状態。＋−かチップ、ホイールで回す" },
+  { title: "終わった", sub: "一度だけ震えて、この画面のまま。タップで最初から" },
+];
+for (const scene of SCENES) { const v = VARIANTS[0];
+  const fig = document.createElement("figure");
+  fig.className = "v-" + v.id;
+  fig.innerHTML = `
+    <div class="watch"><div class="screen" role="button" tabindex="0" aria-label="${v.name}：タップで最初から">
+      <div class="clock">10:09</div>
+      ${v.face}
+      <div class="pulse"></div>
+      <button class="gear" aria-label="時間を変える">${GEAR}</button>
+      <div class="settings">
+        <button class="close">← 戻る</button>
+        <div class="label">時間</div>
+        <div class="value"><span class="num"></span></div>
+        <div class="steps"><button class="minus" aria-label="減らす">−</button><button class="plus" aria-label="増やす">＋</button></div>
+        <div class="chips">${CHIPS.map(c => `<button data-s="${c}">${jp(c)}</button>`).join("")}</div>
+        <button class="go">この時間で開始</button>
+      </div>
+    </div></div>
+    <figcaption><div class="name">${scene.title}</div><p>${scene.sub}</p></figcaption>`;
+  stage.appendChild(fig);
+
+  const screen = fig.querySelector(".screen");
+  v.init(fig);
+
+  const u = { v, fig, screen, total: duration, endAt: 0, done: false, last: false, draft: duration };
+
+  u.start = (sec) => {
+    u.total = sec ?? duration; u.endAt = Date.now() + u.total * 1000; u.done = false; u.last = false;
+    fig.classList.remove("done", "last");
+    screen.classList.remove("finishing", "setting");
+    screen.classList.remove("pulsing"); void screen.offsetWidth; screen.classList.add("pulsing");
+  };
+  u.finish = () => {
+    u.done = true; fig.classList.remove("last"); fig.classList.add("done");
+    screen.classList.remove("pulsing"); void screen.offsetWidth; screen.classList.add("finishing");
+    chirp();
+  };
+  u.tick = (now) => {
+    const left = Math.max(0, (u.endAt - now) / 1000);
+    const f = u.total ? left / u.total : 0;
+    if (!u.done && left <= 0) u.finish();
+    const last = !u.done && left <= 10 && u.total > 20;
+    if (last !== u.last) { u.last = last; fig.classList.toggle("last", last); }
+    v.draw(fig, f, left, u.done);
+  };
+
+  /* 設定 */
+  const num = fig.querySelector(".num");
+  const chips = [...fig.querySelectorAll(".chips button")];
+  u.fig = fig;
+  const showDraft = () => {
+    const m = Math.floor(u.draft / 60), s = u.draft % 60;
+    num.innerHTML = m ? `${m}<small>分</small>${s ? pad(s) + "<small>秒</small>" : ""}` : `${s}<small>秒</small>`;
+    chips.forEach(c => c.classList.toggle("on", +c.dataset.s === u.draft));
+  };
+  const openSettings = () => { u.draft = duration; showDraft(); screen.classList.add("setting"); };
+  const closeSettings = () => screen.classList.remove("setting");
+
+  fig.querySelector(".gear").addEventListener("click", e => { e.stopPropagation(); openSettings(); });
+  fig.querySelector(".close").addEventListener("click", e => { e.stopPropagation(); closeSettings(); });
+  fig.querySelector(".minus").addEventListener("click", e => { e.stopPropagation(); u.draft = step(u.draft, -1); showDraft(); });
+  fig.querySelector(".plus").addEventListener("click", e => { e.stopPropagation(); u.draft = step(u.draft, +1); showDraft(); });
+  chips.forEach(c => c.addEventListener("click", e => { e.stopPropagation(); u.draft = +c.dataset.s; showDraft(); }));
+  fig.querySelector(".go").addEventListener("click", e => { e.stopPropagation(); saveDuration(u.draft); u.start(u.draft); });
+  fig.querySelector(".settings").addEventListener("click", e => e.stopPropagation());
+  /* ホイール ＝ デジタルクラウンの代わり */
+  screen.addEventListener("wheel", e => {
+    if (!screen.classList.contains("setting")) return;
+    e.preventDefault(); u.draft = step(u.draft, e.deltaY < 0 ? +1 : -1); showDraft();
+  }, { passive: false });
+
+  /* 画面タップ ＝ 最初から */
+  screen.addEventListener("click", () => { if (!screen.classList.contains("setting")) u.start(); });
+  screen.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); screen.click(); } });
+
+  u.scene = scene;
+  units.push(u);
+}
+
+document.getElementById("restartAll").addEventListener("click", () => units.forEach(u => u.start()));
+document.getElementById("nowLabel").textContent = jp(duration);
+
+/* 起動 ＝ 即スタート。見本のため2台目は設定を開き、3台目は終わった状態にする */
+units.forEach(u => u.start());
+units[1].fig.querySelector(".gear").click();
+units[2].endAt = Date.now() - 1;
+(function loop() { const now = Date.now(); units.forEach(u => u.tick(now)); requestAnimationFrame(loop); })();
+</script>
+</body>
+</html>
