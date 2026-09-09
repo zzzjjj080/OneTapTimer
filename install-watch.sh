@@ -33,8 +33,10 @@ xcodebuild -project OneTapTimer.xcodeproj -scheme "OneTapTimer Watch App" -confi
   -allowProvisioningUpdates build 2>&1 | grep -E "error:|BUILD SUCCEEDED" | tee /tmp/ott-build.log
 grep -q "BUILD SUCCEEDED" /tmp/ott-build.log || { echo "❌ ビルドが通っていないので入れません"; exit 1; }
 
-# 初回はタイムアウトすることがある。失敗したら1回だけ再実行する
-for i in 1 2; do
+# 初回は「Connection invalid」（IXRemoteErrorDomain 6）で切れることがある。
+# 10秒空けてやり直すと通る（2026-09-10 実測。すぐ再実行しても同じエラーだった）
+for i in 1 2 3; do
+  [ "$i" -gt 1 ] && sleep 10
   if xcrun devicectl device install app --device "$DEV" \
       "/tmp/ott-device/Build/Products/Debug-watchos/OneTapTimer Watch App.app" 2>&1 | grep -E "bundleID"; then
     echo "✅ 完了。Watch のホーム画面に「ワンタップ」が出ます"; exit 0
