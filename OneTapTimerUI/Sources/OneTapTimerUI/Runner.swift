@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import WidgetKit
 import OneTapTimerCore
 
 /// 触覚。Watch と iPhone で鳴らし方が違うので、外から差し込む。
@@ -45,11 +46,11 @@ public final class Runner {
     private var ticker: Task<Void, Never>?
     private var isActive = false
 
-    private static let durationKey = "duration"
-    private static let engineKey = "engine"
+    private static let durationKey = SharedStore.durationKey
+    private static let engineKey = SharedStore.engineKey
 
     public init(haptics: TimerHaptics, notifier: EndScheduling? = nil,
-                defaults: UserDefaults = .standard, now: Date = .now) {
+                defaults: UserDefaults = SharedStore.defaults, now: Date = .now) {
         self.haptics = haptics
         self.notifier = notifier ?? EndNotifier()
         self.defaults = defaults
@@ -163,10 +164,12 @@ public final class Runner {
         return true
     }
 
+    /// 保存して、文字盤のコンプリケーションに描き直させる（設定した秒数と、走っているかを出している）
     private func persist() {
         if let data = try? JSONEncoder().encode(engine) {
             defaults.set(data, forKey: Self.engineKey)
         }
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     // MARK: - 動作確認用

@@ -86,4 +86,15 @@ xcrun simctl io "$W" screenshot out.png
 ./install-phone.sh
 ```
 
-署名は手動。プロファイルは `./Tools-MakeProfile.py dev`（提出用は `dist`）。
+Debug は自動署名（`-allowProvisioningUpdates`。Xcode にアカウントが入っている）。
+Release は手動で、提出用のプロファイルは `./Tools-MakeProfile.py dist` が作る。
+
+## コンプリケーションと App Group
+
+コンプリケーションは別プロセスなので、設定した秒数と「走っているか」を
+App Group（`group.com.zzzjjj080.OneTapTimer`）の UserDefaults で渡す。`OneTapTimerUI/SharedStore.swift` がキーの正。
+拡張はパッケージを読まず、同じキーと `TimerEngine` の JSON を自前で読む（`OneTapTimerWidget.swift` の `SharedState`）。
+アプリは保存のたびに `WidgetCenter.reloadAllTimelines()` を呼ぶ。走っている間は終わる時刻に2枚目のエントリを置き、
+文字盤はそこで秒数の表示にひとりでに戻る。
+
+App Group の作成は API に無い。自動署名で一度ビルドすると作られる（引き継ぎ書 4-28 の訂正）。

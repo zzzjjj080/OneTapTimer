@@ -4,9 +4,6 @@ set -eo pipefail
 cd "$(dirname "$0")"
 ROOT="$PWD"
 
-if ! grep -rlq "OneTapTimer iOS Dev" ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null; then
-  "$ROOT/Tools-MakeProfile.py" dev
-fi
 
 find_phone() {
   xcrun devicectl list devices 2>/dev/null | grep '(iPhone' | grep ' connected ' | grep -v 'no DDI' | head -1 || true
@@ -28,7 +25,7 @@ echo "→ $(echo "$LINE" | sed -E 's/.*connected +//') にインストールし�
 cd "$ROOT/OneTapTimer"
 xcodebuild -project OneTapTimer.xcodeproj -scheme OneTapTimer -configuration Debug \
   -destination "platform=iOS,id=$DEV" -destination-timeout 30 -derivedDataPath /tmp/ott-phone-device \
-  build 2>&1 | grep -E "error:|BUILD SUCCEEDED" | tee /tmp/ott-build.log
+  -allowProvisioningUpdates build 2>&1 | grep -E "error:|BUILD SUCCEEDED" | tee /tmp/ott-build.log
 grep -q "BUILD SUCCEEDED" /tmp/ott-build.log || { echo "❌ ビルドが通っていないので入れません"; exit 1; }
 
 xcrun devicectl device install app --device "$DEV" \

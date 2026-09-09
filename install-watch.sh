@@ -2,15 +2,11 @@
 # 修正のたびに Apple Watch へ入れるためのスクリプト。
 # Watch は腕に着けてロック解除。iPhone が Mac と同じ Wi-Fi にいれば USB は要らない（引き継ぎ書「Mac 上のセッションで」）。
 #
-# 署名は手動。プロファイルは ./Tools-MakeProfile.py dev が作る（本体・Watch・コンプリケーションで3枚）。
+# Debug は自動署名（Xcode にアカウントがある）。API でプロファイルを作ると App Group 付きでは 500 が返るため。
 set -eo pipefail
 cd "$(dirname "$0")"
 ROOT="$PWD"
 
-if ! grep -rlq "OneTapTimer Watch Dev" ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null; then
-  echo "→ プロビジョニングプロファイルを作ります"
-  "$ROOT/Tools-MakeProfile.py" dev
-fi
 
 # 一覧を眺めるだけでは繋がらない。**こちらから話しかけるとトンネルが張られる**（4-85）。
 find_watch() {
@@ -34,7 +30,7 @@ echo "→ $(echo "$LINE" | sed -E 's/.*connected +//') にインストールし�
 cd "$ROOT/OneTapTimer"
 xcodebuild -project OneTapTimer.xcodeproj -scheme "OneTapTimer Watch App" -configuration Debug \
   -destination "platform=watchOS,id=$DEV" -destination-timeout 30 -derivedDataPath /tmp/ott-device \
-  build 2>&1 | grep -E "error:|BUILD SUCCEEDED" | tee /tmp/ott-build.log
+  -allowProvisioningUpdates build 2>&1 | grep -E "error:|BUILD SUCCEEDED" | tee /tmp/ott-build.log
 grep -q "BUILD SUCCEEDED" /tmp/ott-build.log || { echo "❌ ビルドが通っていないので入れません"; exit 1; }
 
 # 初回はタイムアウトすることがある。失敗したら1回だけ再実行する
