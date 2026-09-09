@@ -70,7 +70,10 @@ public struct DrainFace: View {
 
     @ViewBuilder
     private var digits: some View {
-        if liveDigits || engine.isFinished {
+        if engine.isCancelled {
+            // 止めた。次にタップしたら始まる長さを見せる
+            Text(TimeText.display(Double(engine.duration)))
+        } else if liveDigits || engine.isFinished {
             Text(TimeText.display(remaining))
         } else {
             // システムが描く。書式は `m:ss` 固定（1分を切っても `0:45`）。
@@ -80,6 +83,7 @@ public struct DrainFace: View {
     }
 
     private var label: LocalizedStringKey {
+        if engine.isCancelled { return "とめた" }
         if engine.isFinished { return "おわり" }
         return secondsOnly ? "秒" : "のこり"
     }

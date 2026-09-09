@@ -9,50 +9,35 @@ struct DurationRuleTests {
         #expect(DurationRule.clamp(99_999) == 3600)
     }
 
-    @Test func 刻みは長さで粗くなる() {
-        #expect(DurationRule.stepSize(at: 10) == 10)
-        #expect(DurationRule.stepSize(at: 299) == 10)
-        #expect(DurationRule.stepSize(at: 300) == 30)
-        #expect(DurationRule.stepSize(at: 1199) == 30)
-        #expect(DurationRule.stepSize(at: 1200) == 60)
-    }
-
-    @Test func 上下は境目で刻みが切り替わる() {
-        #expect(DurationRule.stepped(90, up: true) == 100)
-        #expect(DurationRule.stepped(90, up: false) == 80)
-        // 5:00 から下げたら 4:50。4:30 ではない
-        #expect(DurationRule.stepped(300, up: false) == 290)
-        #expect(DurationRule.stepped(300, up: true) == 330)
-        #expect(DurationRule.stepped(1200, up: false) == 1170)
-        #expect(DurationRule.stepped(1200, up: true) == 1260)
+    @Test func 十秒と一分で動く() {
+        #expect(DurationRule.stepped(90, by: 10) == 100)
+        #expect(DurationRule.stepped(90, by: -10) == 80)
+        #expect(DurationRule.stepped(90, by: 60) == 150)
+        #expect(DurationRule.stepped(90, by: -60) == 30)
     }
 
     @Test func 端では止まる() {
-        #expect(DurationRule.stepped(10, up: false) == 10)
-        #expect(DurationRule.stepped(3600, up: true) == 3600)
-        #expect(DurationRule.stepped(3595, up: true) == 3600)
+        #expect(DurationRule.stepped(10, by: -10) == 10)
+        #expect(DurationRule.stepped(30, by: -60) == 10)
+        #expect(DurationRule.stepped(3600, by: 10) == 3600)
+        #expect(DurationRule.stepped(3590, by: 60) == 3600)
     }
 
-    @Test func 刻みに乗っていない値は刻みへ戻る() {
-        // 古い保存などで 95 秒が来ても、上は 100、下は 90 に乗る
-        #expect(DurationRule.stepped(95, up: true) == 100)
-        #expect(DurationRule.stepped(95, up: false) == 90)
-    }
-
-    @Test func つまみの連続値は刻みに乗る() {
-        #expect(DurationRule.snapped(93.4) == 90)
-        #expect(DurationRule.snapped(96.0) == 100)
-        #expect(DurationRule.snapped(314.0) == 300)
-        #expect(DurationRule.snapped(316.0) == 330)
-        #expect(DurationRule.snapped(2.0) == 10)
-        #expect(DurationRule.snapped(9_999.0) == 3600)
-    }
-
-    @Test func プリセットは全部範囲内で刻みに乗っている() {
-        for p in DurationRule.presets + DurationRule.presetsCompact {
-            #expect(DurationRule.clamp(p) == p)
-            #expect(DurationRule.snapped(Double(p)) == p)
+    @Test func 十秒に乗っていない値でも十秒に乗って返る() {
+        // つまみも＋−も10秒の倍数しか作らないので、ここへ来るのは古い保存くらい。乗ることだけ見る
+        for v in [95, 3, 3599] {
+            #expect(DurationRule.stepped(v, by: 10) % 10 == 0)
+            #expect(DurationRule.stepped(v, by: -10) % 10 == 0)
         }
-        #expect(DurationRule.presets.contains(DurationRule.standard))
+    }
+
+    @Test func つまみの目盛りは十秒() {
+        #expect(DurationRule.seconds(fromCrown: 9) == 90)
+        #expect(DurationRule.seconds(fromCrown: 9.4) == 90)
+        #expect(DurationRule.seconds(fromCrown: 9.6) == 100)
+        #expect(DurationRule.seconds(fromCrown: 0) == 10)
+        #expect(DurationRule.seconds(fromCrown: 999) == 3600)
+        #expect(DurationRule.crown(fromSeconds: 90) == 9)
+        #expect(DurationRule.crownRange == 1...360)
     }
 }

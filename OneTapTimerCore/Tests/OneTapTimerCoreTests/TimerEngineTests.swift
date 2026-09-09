@@ -69,6 +69,25 @@ struct TimerEngineTests {
         #expect(TimerEngine(duration: 9_999, startedAt: t0).duration == 3600)
     }
 
+    @Test func 途中で止めたら止めた時刻に終わったことになる() {
+        var e = TimerEngine(duration: 90, startedAt: t0)
+        e.cancel(at: t0 + 20)
+        #expect(e.isFinished)
+        #expect(e.isCancelled)
+        #expect(e.finishedAt == t0 + 20)
+        #expect(e.advance(to: t0 + 90).isEmpty)      // 時間が来ても鳴らさない
+        e.restart(at: t0 + 100)
+        #expect(!e.isCancelled)
+        #expect(!e.isFinished)
+    }
+
+    @Test func 古い保存にisCancelledが無くても読める() throws {
+        let json = #"{"duration":90,"endAt":700000000,"finishedAt":null}"#.data(using: .utf8)!
+        let e = try JSONDecoder().decode(TimerEngine.self, from: json)
+        #expect(e.duration == 90)
+        #expect(!e.isCancelled)
+    }
+
     @Test func 保存して戻せる() throws {
         var e = TimerEngine(duration: 90, startedAt: t0)
         _ = e.advance(to: t0 + 90)

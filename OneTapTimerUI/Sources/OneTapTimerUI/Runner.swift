@@ -12,8 +12,8 @@ public protocol TimerHaptics: AnyObject {
     func finished()
     /// ＋ − を1つ動かした
     func stepped(up: Bool)
-    /// チップを選んだ
-    func picked()
+    /// 長押しで止めた
+    func cancelled()
 }
 
 /// 画面と ``TimerEngine`` をつなぐところ。Watch と iPhone で同じ。
@@ -90,11 +90,13 @@ public final class Runner {
         persist()
     }
 
-    /// 裏へ回った。前に出るまで時計は止めてよい（通知が代わりに鳴る）
+    /// 裏へ回った。前に出るまで時計は止めてよい（通知が代わりに鳴る）。
+    /// 設定を開いたまま出ていったなら閉じる（クラウンを押す ＝ やめる）。
     public func deactivate() {
         isActive = false
         gate.isForeground = false
         stopTicking()
+        screen = .run
     }
 
     // MARK: - 操作
@@ -102,6 +104,16 @@ public final class Runner {
     /// 画面をタップした。**最初から。**
     public func restart(now: Date = .now) {
         start(now: now)
+    }
+
+    /// 画面を長押しした。**止める。** 開き直したときの扱いは「終わった」と同じ
+    public func cancel(now: Date = .now) {
+        guard !engine.isFinished else { return }
+        engine.cancel(at: now)
+        stopTicking()
+        notifier.cancel()
+        haptics.cancelled()
+        persist()
     }
 
     public func openSettings() {
@@ -123,7 +135,6 @@ public final class Runner {
     // MARK: - 触覚の橋渡し
 
     public func stepped(up: Bool) { haptics.stepped(up: up) }
-    public func picked() { haptics.picked() }
 
     // MARK: - 内部
 

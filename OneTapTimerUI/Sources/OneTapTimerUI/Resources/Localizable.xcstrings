@@ -1,30 +1,72 @@
 {
-  "sourceLanguage" : "ja",
-  "strings" : {
-    "のこり" : {
-      "comment" : "走っている間、数字の下",
-      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "LEFT" } } }
+  "sourceLanguage": "ja",
+  "strings": {
+    "のこり": {
+      "comment": "走っている間、数字の下",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LEFT"
+          }
+        }
+      }
     },
-    "秒" : {
-      "comment" : "1分を切って秒だけ出すときの単位／設定の値の単位",
-      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "s" } } }
+    "秒": {
+      "comment": "1分を切って秒だけ出すときの単位／設定の値の単位",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "s"
+          }
+        }
+      }
     },
-    "分" : {
-      "comment" : "設定の値の単位",
-      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "m" } } }
+    "分": {
+      "comment": "設定の値の単位",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "m"
+          }
+        }
+      }
     },
-    "おわり" : {
-      "comment" : "終わった画面と通知の見出し",
-      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "DONE" } } }
+    "おわり": {
+      "comment": "終わった画面と通知の見出し",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DONE"
+          }
+        }
+      }
     },
-    "時間" : {
-      "comment" : "設定画面の見出し",
-      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "DURATION" } } }
+    "時間を変える": {
+      "comment": "歯車ボタンの読み上げ",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change duration"
+          }
+        }
+      }
     },
-    "時間を変える" : {
-      "comment" : "歯車ボタンの読み上げ",
-      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Change duration" } } }
+    "とめた": {
+      "comment": "長押しで止めたあとの画面",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "STOPPED"
+          }
+        }
+      }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

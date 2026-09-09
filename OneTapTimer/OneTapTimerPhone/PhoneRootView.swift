@@ -13,6 +13,7 @@ struct PhoneRootView: View {
             .ignoresSafeArea()
             .contentShape(Rectangle())
             .onTapGesture { runner.restart() }
+            .onLongPressGesture(minimumDuration: 0.7) { runner.cancel() }
             .accessibilityIdentifier("face")
 
             GearButton(skin: Skin.of(runner.engine, at: .now), size: 48) {

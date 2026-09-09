@@ -24,18 +24,16 @@ struct PhoneSettingsSheet: View {
             }
             .padding(.horizontal, 20)
 
-            DurationEditor(value: $draft, compact: false, showsLabel: true,
-                           stepSize: CGSize(width: 104, height: 60),
-                           valueSize: 76, chipSize: 17,
-                           onStep: { runner.stepped(up: $0) },
-                           onPick: { runner.picked() })
+            DurationEditor(value: $draft, fineSize: CGSize(width: 140, height: 64),
+                           valueSize: 76, labelSize: 17,
+                           onStep: { runner.stepped(up: $0) })
 
             Spacer(minLength: 0)
 
             Button {
                 runner.apply(duration: draft)
             } label: {
-                Text("この時間で開始")
+                Text("完了して戻る")
                     .font(.system(size: 19, weight: .bold))
                     .foregroundStyle(Color(hex: PaletteHex.ground))
                     .frame(maxWidth: .infinity, minHeight: 58)

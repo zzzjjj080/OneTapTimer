@@ -1,12 +1,26 @@
 {
-  "sourceLanguage" : "ja",
-  "strings" : {
-    "この時間で開始" : {
-      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Start with this" } } }
+  "sourceLanguage": "ja",
+  "strings": {
+    "戻る": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back"
+          }
+        }
+      }
     },
-    "戻る" : {
-      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Back" } } }
+    "完了して戻る": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        }
+      }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

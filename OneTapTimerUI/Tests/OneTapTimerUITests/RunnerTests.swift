@@ -9,7 +9,7 @@ final class SpyHaptics: TimerHaptics {
     func started() { log.append("start") }
     func finished() { log.append("finish") }
     func stepped(up: Bool) { log.append(up ? "up" : "down") }
-    func picked() { log.append("pick") }
+    func cancelled() { log.append("cancel") }
 }
 
 @MainActor
@@ -106,6 +106,29 @@ struct RunnerTests {
 
         let again = Runner(haptics: SpyHaptics(), notifier: SpyScheduler(), defaults: d, now: t0 + 9999)
         #expect(again.duration == 180)
+    }
+
+    @Test func 長押しで止めたら鳴らずに終わり扱い() {
+        let h = SpyHaptics(), s = SpyScheduler()
+        let r = Runner(haptics: h, notifier: s, defaults: fresh(), now: t0)
+        r.activate(now: t0)
+        r.cancel(now: t0 + 20)
+        #expect(r.engine.isCancelled)
+        #expect(s.cancels == 1)
+        #expect(h.log == ["start", "cancel"])
+        // 止めてすぐ開き直しても始めない。30秒過ぎたら始める
+        r.deactivate(); r.activate(now: t0 + 40)
+        #expect(r.engine.isCancelled)
+        r.deactivate(); r.activate(now: t0 + 60)
+        #expect(!r.engine.isFinished)
+    }
+
+    @Test func 設定を開いたまま裏へ回ったら閉じる() {
+        let r = Runner(haptics: SpyHaptics(), notifier: SpyScheduler(), defaults: fresh(), now: t0)
+        r.activate(now: t0)
+        r.openSettings()
+        r.deactivate()
+        #expect(r.screen == .run)
     }
 
     @Test func 範囲外の設定は丸められる() {

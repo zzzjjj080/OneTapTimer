@@ -22,6 +22,8 @@ public struct TimerEngine: Equatable, Sendable, Codable {
     public let duration: Int
     public private(set) var endAt: Date
     public private(set) var finishedAt: Date?
+    /// 長押しで止めた（時間が来て終わったのではない）
+    public private(set) var isCancelled: Bool = false
 
     public init(duration: Int, startedAt: Date) {
         self.duration = DurationRule.clamp(duration)
@@ -30,6 +32,13 @@ public struct TimerEngine: Equatable, Sendable, Codable {
     }
 
     public var isFinished: Bool { finishedAt != nil }
+
+    /// 途中で止める。「止めた時刻に終わった」ことにする。開き直したときの扱いは終了と同じ
+    public mutating func cancel(at now: Date) {
+        guard !isFinished else { return }
+        finishedAt = now
+        isCancelled = true
+    }
     public var startAt: Date { endAt.addingTimeInterval(-TimeInterval(duration)) }
 
     /// 残り秒。0未満にはならない。
@@ -63,6 +72,17 @@ public struct TimerEngine: Equatable, Sendable, Codable {
     /// 同じ長さで最初から。
     public mutating func restart(at now: Date) {
         self = TimerEngine(duration: duration, startedAt: now)
+    }
+
+    // 保存済みの JSON に `isCancelled` が無くても読めるように
+    private enum CodingKeys: String, CodingKey { case duration, endAt, finishedAt, isCancelled }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        duration = try c.decode(Int.self, forKey: .duration)
+        endAt = try c.decode(Date.self, forKey: .endAt)
+        finishedAt = try c.decodeIfPresent(Date.self, forKey: .finishedAt)
+        isCancelled = try c.decodeIfPresent(Bool.self, forKey: .isCancelled) ?? false
     }
 
     /// 終わってからの経過。終わっていなければ nil。

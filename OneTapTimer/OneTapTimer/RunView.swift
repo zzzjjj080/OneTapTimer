@@ -2,7 +2,7 @@ import SwiftUI
 import WatchKit
 import OneTapTimerUI
 
-/// 走っている画面。**画面のどこを押しても最初から。** 左上の歯車だけが例外。
+/// 走っている画面。**画面のどこを押しても最初から。長押しで止める。** 左上の歯車だけが例外。
 struct RunView: View {
     @Environment(Runner.self) private var runner
     /// 常時表示（腕を下ろして暗くなった状態）
@@ -13,6 +13,7 @@ struct RunView: View {
             face
                 .contentShape(Rectangle())
                 .onTapGesture { runner.restart() }
+                .onLongPressGesture(minimumDuration: 0.7) { runner.cancel() }
                 .accessibilityIdentifier("face")
 
             // 上部・左。時刻は右上に出るので、左は空いている
