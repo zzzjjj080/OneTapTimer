@@ -29,6 +29,8 @@ struct LaunchEntry: TimelineEntry {
     let duration: Int
     /// 走っていれば終わる時刻
     let endAt: Date?
+    /// 水の色（アプリの色の組と同じ）
+    let liquid: Color
     var isRunning: Bool { endAt.map { $0 > date } ?? false }
 }
 
@@ -44,25 +46,32 @@ enum SharedState {
         let finishedAt: Date?
     }
 
-    static func read(now: Date) -> (duration: Int, endAt: Date?) {
+    /// 色の組の「水の上端」。アプリの `ThemeHex.all` と同じ並び（1〜10）
+    static let liquids: [UInt32] = [0x22B8AE, 0x3B9DF0, 0x6C7BEA, 0xA56BE8, 0xF06AA8,
+                                    0xF0605A, 0xF5923A, 0xE6C02A, 0x4FC46A, 0xA9B0B8]
+
+    static func read(now: Date) -> (duration: Int, endAt: Date?, liquid: Color) {
         let d = UserDefaults(suiteName: groupID)
         let saved = d?.integer(forKey: "duration") ?? 0
         let duration = saved == 0 ? standard : saved
+        let t = d?.integer(forKey: "theme") ?? 0
+        let hex = (1...liquids.count).contains(t) ? liquids[t - 1] : liquids[0]
+        let liquid = Color(red: Double((hex >> 16) & 0xFF) / 255, green: Double((hex >> 8) & 0xFF) / 255, blue: Double(hex & 0xFF) / 255)
         guard let data = d?.data(forKey: "engine"),
               let e = try? JSONDecoder().decode(Engine.self, from: data),
-              e.finishedAt == nil, e.endAt > now else { return (duration, nil) }
-        return (duration, e.endAt)
+              e.finishedAt == nil, e.endAt > now else { return (duration, nil, liquid) }
+        return (duration, e.endAt, liquid)
     }
 }
 
 struct LaunchProvider: TimelineProvider {
     func placeholder(in context: Context) -> LaunchEntry {
-        LaunchEntry(date: .now, duration: SharedState.standard, endAt: nil)
+        LaunchEntry(date: .now, duration: SharedState.standard, endAt: nil, liquid: Palette.liquid)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (LaunchEntry) -> Void) {
         let s = SharedState.read(now: .now)
-        completion(LaunchEntry(date: .now, duration: s.duration, endAt: s.endAt))
+        completion(LaunchEntry(date: .now, duration: s.duration, endAt: s.endAt, liquid: s.liquid))
     }
 
     /// 走っていれば「いま」と「終わる時刻」の2枚。終わる時刻で秒数の表示に戻る。
@@ -70,9 +79,9 @@ struct LaunchProvider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<LaunchEntry>) -> Void) {
         let now = Date()
         let s = SharedState.read(now: now)
-        var entries = [LaunchEntry(date: now, duration: s.duration, endAt: s.endAt)]
+        var entries = [LaunchEntry(date: now, duration: s.duration, endAt: s.endAt, liquid: s.liquid)]
         if let end = s.endAt {
-            entries.append(LaunchEntry(date: end, duration: s.duration, endAt: nil))
+            entries.append(LaunchEntry(date: end, duration: s.duration, endAt: nil, liquid: s.liquid))
         }
         completion(Timeline(entries: entries, policy: .never))
     }
@@ -119,7 +128,7 @@ struct ComplicationView: View {
             }
         case .accessoryRectangular:
             HStack(spacing: 8) {
-                LevelGlyph(number: nil).frame(width: 32, height: 32)
+                LevelGlyph(number: nil, liquid: entry.liquid).frame(width: 32, height: 32)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("ワンタップタイマー").font(.headline)
                     HStack(spacing: 3) {
@@ -130,11 +139,11 @@ struct ComplicationView: View {
                 Spacer(minLength: 0)
             }
         case .accessoryCorner:
-            LevelGlyph(number: nil)
+            LevelGlyph(number: nil, liquid: entry.liquid)
                 .widgetLabel { number.monospacedDigit() }
         default:
             // 丸い枠：水の絵の上に秒数
-            LevelGlyph(number: AnyView(number)).padding(1)
+            LevelGlyph(number: AnyView(number), liquid: entry.liquid).padding(1)
         }
     }
 }
@@ -153,12 +162,13 @@ enum Palette {
 struct LevelGlyph: View {
     /// 真ん中に載せる数字。`nil` なら絵だけ
     let number: AnyView?
+    let liquid: Color
     @Environment(\.widgetRenderingMode) private var mode
 
     var body: some View {
         ZStack {
             if mode == .fullColor {
-                LevelShape(level: 0.42).fill(Palette.liquid)
+                LevelShape(level: 0.42).fill(liquid)
                 RingShape().stroke(Palette.rim, lineWidth: 2)
             } else {
                 // 単色に着色される文字盤では、水を強調色に。輪は薄く

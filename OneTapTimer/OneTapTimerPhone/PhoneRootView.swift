@@ -6,20 +6,20 @@ struct PhoneRootView: View {
     @Environment(Runner.self) private var runner
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
+        ZStack(alignment: .top) {
             TimelineView(.animation(minimumInterval: 1.0 / 30, paused: runner.engine.isFinished)) { t in
-                DrainFace(engine: runner.engine, now: t.date, metrics: .phone)
+                DrainFace(engine: runner.engine, now: t.date, theme: runner.themeHex, metrics: .phone)
             }
             .ignoresSafeArea()
             .contentShape(Rectangle())
-            .onTapGesture { runner.restart() }
+            .onTapGesture { runner.startAgain() }
             .onLongPressGesture(minimumDuration: 0.7) { runner.cancel() }
             .accessibilityIdentifier("face")
 
-            GearButton(skin: Skin.of(runner.engine, at: .now), size: 48) {
+            SettingPill(skin: Skin.of(runner.engine, at: .now, theme: runner.themeHex),
+                        duration: runner.duration, height: 44) {
                 runner.openSettings()
             }
-            .padding(.leading, 20)
             .padding(.top, 8)
         }
         .sheet(isPresented: Binding(get: { runner.screen == .settings },

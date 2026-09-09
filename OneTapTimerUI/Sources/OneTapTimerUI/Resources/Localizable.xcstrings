@@ -56,13 +56,46 @@
         }
       }
     },
-    "とめた": {
+    "キャンセル": {
       "comment": "長押しで止めたあとの画面",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "STOPPED"
+            "value": "CANCELLED"
+          }
+        }
+      }
+    },
+    "長押しでキャンセル": {
+      "comment": "走っている画面の下端",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold to cancel"
+          }
+        }
+      }
+    },
+    "タップで始める": {
+      "comment": "終わった画面の下端",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap to start"
+          }
+        }
+      }
+    },
+    "色": {
+      "comment": "設定の色ボタン",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Color"
           }
         }
       }

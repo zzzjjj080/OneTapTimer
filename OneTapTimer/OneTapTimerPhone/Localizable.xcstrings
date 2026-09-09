@@ -20,6 +20,16 @@
           }
         }
       }
+    },
+    "色": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Color"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

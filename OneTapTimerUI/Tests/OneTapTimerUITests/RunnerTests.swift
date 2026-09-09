@@ -83,14 +83,36 @@ struct RunnerTests {
         #expect(s.scheduled == [t0 + 690])
     }
 
-    @Test func タップで最初から() {
+    @Test func 走っている最中のタップは何もしない() {
         let h = SpyHaptics(), s = SpyScheduler()
         let r = Runner(haptics: h, notifier: s, defaults: fresh(), now: t0)
         r.activate(now: t0)
-        r.restart(now: t0 + 30)
-        #expect(r.engine.remaining(at: t0 + 30) == 90)
-        #expect(h.log == ["start", "start"])
-        #expect(s.scheduled.last == t0 + 120)
+        r.startAgain(now: t0 + 30)
+        #expect(r.engine.remaining(at: t0 + 30) == 60)
+        #expect(h.log == ["start"])
+    }
+
+    @Test func 終わった画面のタップで新しく始まる() {
+        let h = SpyHaptics(), s = SpyScheduler(), d = fresh()
+        let r = Runner(haptics: h, notifier: s, defaults: d, now: t0)
+        r.activate(now: t0)
+        r.cancel(now: t0 + 5)
+        r.startAgain(now: t0 + 10)
+        #expect(!r.engine.isFinished)
+        #expect(r.engine.remaining(at: t0 + 10) == 90)
+        #expect(s.scheduled.last == t0 + 100)
+    }
+
+    @Test func 色は順繰りで保存される() {
+        let d = fresh()
+        let r = Runner(haptics: SpyHaptics(), notifier: SpyScheduler(), defaults: d, now: t0)
+        #expect(r.theme == 1)
+        for _ in 0..<10 { r.cycleTheme() }
+        #expect(r.theme == 1)
+        r.cycleTheme()
+        #expect(r.theme == 2)
+        let again = Runner(haptics: SpyHaptics(), notifier: SpyScheduler(), defaults: d, now: t0)
+        #expect(again.theme == 2)
     }
 
     @Test func 設定を決めたら保存されて次回もその長さ() {

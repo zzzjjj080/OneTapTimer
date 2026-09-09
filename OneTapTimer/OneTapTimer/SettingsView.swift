@@ -36,6 +36,26 @@ struct SettingsView: View {
 
                 Spacer(minLength: 4)
 
+                // 色。押すたびに 1→2→…→10→1。水の色で塗って、いまの番号を出す
+                Button {
+                    runner.cycleTheme()
+                } label: {
+                    HStack(spacing: 4) {
+                        Text("色")
+                        Text("\(runner.theme)").fontWeight(.heavy).monospacedDigit()
+                    }
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color(hex: PaletteHex.ground))
+                    .frame(width: 72, height: tiny ? 24 : 28)
+                    .background(Capsule().fill(
+                        LinearGradient(colors: [Color(hex: runner.themeHex.liquidTop), Color(hex: runner.themeHex.liquidBottom)],
+                                       startPoint: .top, endPoint: .bottom)))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("theme")
+
+                Spacer(minLength: 4)
+
                 Button {
                     runner.apply(duration: draft)
                 } label: {
@@ -45,7 +65,7 @@ struct SettingsView: View {
                         // 塗りがティールなので、文字は黒。こちらのほうが読める
                         .foregroundStyle(Color(hex: PaletteHex.ground))
                         .frame(maxWidth: .infinity, minHeight: tiny ? 30 : 34)
-                        .background(Capsule().fill(Color.accent))
+                        .background(Capsule().fill(Color(hex: runner.themeHex.liquidTop)))
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("go")

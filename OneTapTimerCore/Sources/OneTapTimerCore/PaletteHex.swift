@@ -26,6 +26,15 @@ public enum PaletteHex {
     public static let well: UInt32 = 0x122A2C
     public static let accent: UInt32 = 0x2BC2B7
 
+    /// 2色を混ぜる。`t` が 0 なら a、1 なら b
+    public static func mix(_ a: UInt32, _ b: UInt32, _ t: Double) -> UInt32 {
+        func ch(_ shift: UInt32) -> UInt32 {
+            let x = Double((a >> shift) & 0xFF), y = Double((b >> shift) & 0xFF)
+            return UInt32((x + (y - x) * t).rounded()) & 0xFF
+        }
+        return (ch(16) << 16) | (ch(8) << 8) | ch(0)
+    }
+
     // MARK: - コントラスト
 
     /// WCAG の相対輝度。

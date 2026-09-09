@@ -2,26 +2,28 @@ import SwiftUI
 import WatchKit
 import OneTapTimerUI
 
-/// 走っている画面。**画面のどこを押しても最初から。長押しで止める。** 左上の歯車だけが例外。
+/// 走っている画面。**長押しでキャンセル。** 走っている最中のタップは何もしない（終わった画面ではタップで始める）。
+/// 上の中央に、時間を変える入口。
 struct RunView: View {
     @Environment(Runner.self) private var runner
     /// 常時表示（腕を下ろして暗くなった状態）
     @Environment(\.isLuminanceReduced) private var dim
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
+        ZStack(alignment: .top) {
             face
                 .contentShape(Rectangle())
-                .onTapGesture { runner.restart() }
+                .onTapGesture { runner.startAgain() }
                 .onLongPressGesture(minimumDuration: 0.7) { runner.cancel() }
                 .accessibilityIdentifier("face")
 
-            // 上部・左。時刻は右上に出るので、左は空いている
-            GearButton(skin: Skin.of(runner.engine, at: .now), size: 34) {
+            // 上の中央。時刻は右上に出るので、少し左に寄せて重ねない
+            SettingPill(skin: Skin.of(runner.engine, at: .now, theme: runner.themeHex),
+                        duration: runner.duration, height: 30) {
                 runner.openSettings()
             }
-            .padding(.leading, 10)
             .padding(.top, 8)
+            .padding(.trailing, 36)
         }
         // 安全領域を外すのはここ1か所だけ。内側で重ねて外すと、かえって狭くなる
         .ignoresSafeArea()
@@ -33,11 +35,11 @@ struct RunView: View {
     private var face: some View {
         if dim {
             TimelineView(.periodic(from: .now, by: 1)) { t in
-                DrainFace(engine: runner.engine, now: t.date, metrics: .watch, liveDigits: false)
+                DrainFace(engine: runner.engine, now: t.date, theme: runner.themeHex, metrics: .watch, liveDigits: false)
             }
         } else {
             TimelineView(.animation(minimumInterval: 1.0 / 30, paused: runner.engine.isFinished)) { t in
-                DrainFace(engine: runner.engine, now: t.date, metrics: .watch, liveDigits: true)
+                DrainFace(engine: runner.engine, now: t.date, theme: runner.themeHex, metrics: .watch, liveDigits: true)
             }
         }
     }

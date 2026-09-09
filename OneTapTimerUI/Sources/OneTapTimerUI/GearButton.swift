@@ -1,28 +1,35 @@
 import SwiftUI
+import OneTapTimerCore
 
-/// 設定へ入る歯車。**上部・左。時刻の左側で、画面の色に溶ける薄いガラスの円。**
+/// 設定への入口。**上の中央に、時計のマークといまの長さ。** 押すと時間を変える画面へ。
 ///
-/// 押しやすさのために丸そのものは大きめにし、目立たないのは色で作る。
-public struct GearButton: View {
+/// 歯車だと「設定」にしか見えなかった。いまの長さ（`1:30`）を出しておけば
+/// 「ここで時間を変える」と分かるし、押す的も大きい。
+public struct SettingPill: View {
     public var skin: Skin
-    public var size: CGFloat
+    public var duration: Int
+    public var height: CGFloat
     public var action: () -> Void
 
-    public init(skin: Skin, size: CGFloat, action: @escaping () -> Void) {
-        self.skin = skin; self.size = size; self.action = action
+    public init(skin: Skin, duration: Int, height: CGFloat, action: @escaping () -> Void) {
+        self.skin = skin; self.duration = duration; self.height = height; self.action = action
     }
 
     public var body: some View {
         Button(action: action) {
-            ZStack {
-                Circle().fill(skin.glass)
-                Circle().strokeBorder(skin.glassEdge, lineWidth: 1)
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: size * 0.5, weight: .semibold))
-                    .foregroundStyle(skin.glassInk)
+            HStack(spacing: height * 0.18) {
+                Image(systemName: "timer")
+                    .font(.system(size: height * 0.5, weight: .semibold))
+                Text(TimeText.clock(Double(duration)))
+                    .font(.system(size: height * 0.5, weight: .bold, design: .rounded))
+                    .monospacedDigit()
             }
-            .frame(width: size, height: size)
-            .contentShape(Circle())
+            .foregroundStyle(skin.glassInk)
+            .padding(.horizontal, height * 0.5)
+            .frame(height: height)
+            .background(Capsule().fill(skin.glass))
+            .overlay(Capsule().strokeBorder(skin.glassEdge, lineWidth: 1))
+            .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("時間を変える", bundle: .module))

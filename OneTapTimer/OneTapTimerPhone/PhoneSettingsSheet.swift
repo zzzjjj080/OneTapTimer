@@ -28,6 +28,23 @@ struct PhoneSettingsSheet: View {
                            valueSize: 76, labelSize: 17,
                            onStep: { runner.stepped(up: $0) })
 
+            Button {
+                runner.cycleTheme()
+            } label: {
+                HStack(spacing: 6) {
+                    Text("色")
+                    Text("\(runner.theme)").fontWeight(.heavy).monospacedDigit()
+                }
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(Color(hex: PaletteHex.ground))
+                .frame(width: 120, height: 44)
+                .background(Capsule().fill(
+                    LinearGradient(colors: [Color(hex: runner.themeHex.liquidTop), Color(hex: runner.themeHex.liquidBottom)],
+                                   startPoint: .top, endPoint: .bottom)))
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("theme")
+
             Spacer(minLength: 0)
 
             Button {
@@ -37,7 +54,7 @@ struct PhoneSettingsSheet: View {
                     .font(.system(size: 19, weight: .bold))
                     .foregroundStyle(Color(hex: PaletteHex.ground))
                     .frame(maxWidth: .infinity, minHeight: 58)
-                    .background(Capsule().fill(Color.accent))
+                    .background(Capsule().fill(Color(hex: runner.themeHex.liquidTop)))
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 20)

@@ -12,6 +12,8 @@ public enum SharedStore {
     public static let durationKey = "duration"
     /// いまのタイマー（`TimerEngine` の JSON）
     public static let engineKey = "engine"
+    /// 色の組（1〜10）
+    public static let themeKey = "theme"
 
     /// エンタイトルメントが無い環境（テストなど）では素の保存先に落とす
     public static var defaults: UserDefaults {

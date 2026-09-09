@@ -14,6 +14,10 @@ public struct FaceMetrics: Sendable {
 
     public static let watch = FaceMetrics(digits: 66, digitsShort: 96, label: 12, gap: 6)
     public static let phone = FaceMetrics(digits: 128, digitsShort: 200, label: 20, gap: 12)
+
+    /// 下端の「長押しでキャンセル」
+    var hint: CGFloat { label * 0.85 }
+    var hintBottom: CGFloat { label * 1.6 }
 }
 
 /// 画面そのもの。**水位が下がり、真ん中に残りの数字。**
@@ -25,14 +29,15 @@ public struct FaceMetrics: Sendable {
 public struct DrainFace: View {
     public var engine: TimerEngine
     public var now: Date
+    public var theme: ThemeHex
     public var metrics: FaceMetrics
     public var liveDigits: Bool
 
-    public init(engine: TimerEngine, now: Date, metrics: FaceMetrics, liveDigits: Bool = true) {
-        self.engine = engine; self.now = now; self.metrics = metrics; self.liveDigits = liveDigits
+    public init(engine: TimerEngine, now: Date, theme: ThemeHex, metrics: FaceMetrics, liveDigits: Bool = true) {
+        self.engine = engine; self.now = now; self.theme = theme; self.metrics = metrics; self.liveDigits = liveDigits
     }
 
-    private var skin: Skin { Skin.of(engine, at: now) }
+    private var skin: Skin { Skin.of(engine, at: now, theme: theme) }
     /// 終わったら 0 で固定する。`now` が終了時刻のわずかに手前（描画の1コマ前）でも「1」と出さない
     private var remaining: Double { engine.isFinished ? 0 : engine.remaining(at: now) }
     private var fraction: Double { engine.isFinished ? 0 : engine.fraction(at: now) }
@@ -52,7 +57,7 @@ public struct DrainFace: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
                     .foregroundStyle(skin.ink)
-                    .shadow(color: .black.opacity(skin == .done ? 0 : 0.25), radius: 10, y: 2)
+                    .shadow(color: .black.opacity(skin.isDone ? 0 : 0.25), radius: 10, y: 2)
                     .contentTransition(.numericText(countsDown: true))
                     .accessibilityIdentifier("digits")
 
@@ -62,8 +67,18 @@ public struct DrainFace: View {
                     .foregroundStyle(skin.inkDim)
                     .accessibilityIdentifier("label")
             }
-            // 数字の背景に薄い影を持たせる。水と地の境目に数字が乗っても読める
             .padding(.horizontal, 12)
+
+            // 下端の案内。走っている間は「長押しでキャンセル」、終わったら「タップで始める」
+            VStack {
+                Spacer()
+                Text(hint, bundle: .module)
+                    .font(.system(size: metrics.hint, weight: .medium))
+                    .tracking(0.5)
+                    .foregroundStyle(skin.inkDim.opacity(0.85))
+                    .padding(.bottom, metrics.hintBottom)
+                    .accessibilityIdentifier("hint")
+            }
         }
         .animation(.easeInOut(duration: 0.35), value: skin)
     }
@@ -83,9 +98,13 @@ public struct DrainFace: View {
     }
 
     private var label: LocalizedStringKey {
-        if engine.isCancelled { return "とめた" }
+        if engine.isCancelled { return "キャンセル" }
         if engine.isFinished { return "おわり" }
         return secondsOnly ? "秒" : "のこり"
+    }
+
+    private var hint: LocalizedStringKey {
+        engine.isFinished ? "タップで始める" : "長押しでキャンセル"
     }
 }
 

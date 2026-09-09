@@ -33,6 +33,9 @@ public final class Runner {
     public private(set) var engine: TimerEngine
     /// 設定してある長さ（秒）。次に始めるときの値
     public private(set) var duration: Int
+    /// 色の組の番号（1〜10）
+    public private(set) var theme: Int
+    public var themeHex: ThemeHex { ThemeHex.at(theme) }
 
     /// 終わってからこの秒数のあいだに開き直したときは、始めずに「おわり」を見せる。
     /// 腕を上げて終わりを確かめただけで、次の90秒が走り出さないように。
@@ -58,6 +61,8 @@ public final class Runner {
         let saved = defaults.integer(forKey: Self.durationKey)
         let d = saved == 0 ? DurationRule.standard : DurationRule.clamp(saved)
         duration = d
+        let t = defaults.integer(forKey: SharedStore.themeKey)
+        theme = (1...ThemeHex.all.count).contains(t) ? t : 1
 
         // 前回の続き。プロセスが落とされていても、終わる時刻はここから戻る
         if let data = defaults.data(forKey: Self.engineKey),
@@ -101,9 +106,19 @@ public final class Runner {
 
     // MARK: - 操作
 
-    /// 画面をタップした。**最初から。**
-    public func restart(now: Date = .now) {
+    /// 終わった画面（おわり／キャンセル）をタップした。**新しく始める。**
+    /// 走っている最中のタップは何もしない（誤タップで最初に戻らないように）。
+    public func startAgain(now: Date = .now) {
+        guard engine.isFinished else { return }
         start(now: now)
+    }
+
+    /// 色の組を次へ（10 の次は 1）。保存して、文字盤にも反映させる
+    public func cycleTheme() {
+        theme = ThemeHex.next(after: theme)
+        defaults.set(theme, forKey: SharedStore.themeKey)
+        haptics.stepped(up: true)
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     /// 画面を長押しした。**止める。** 開き直したときの扱いは「終わった」と同じ
@@ -191,6 +206,7 @@ public final class Runner {
     ///     OTT_STATE=running:45   残り45秒で走っている
     ///     OTT_STATE=last:7       終わりが近い
     ///     OTT_STATE=done         終わった直後
+    ///     OTT_STATE=cancelled    長押しで止めた直後
     ///     OTT_STATE=settings     設定を開いた
     public func applyDebugState(_ spec: String, now: Date = .now) {
         let parts = spec.split(separator: ":")
@@ -203,6 +219,11 @@ public final class Runner {
         case "done":
             engine = TimerEngine(duration: duration, startedAt: now.addingTimeInterval(-Double(duration)))
             _ = engine.advance(to: now)
+            notifier.cancel()
+            stopTicking()
+        case "cancelled":
+            engine = TimerEngine(duration: duration, startedAt: now.addingTimeInterval(-20))
+            engine.cancel(at: now)
             notifier.cancel()
             stopTicking()
         case "settings":
