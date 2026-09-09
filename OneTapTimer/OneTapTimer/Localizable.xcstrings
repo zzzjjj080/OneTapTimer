@@ -1,26 +1,5 @@
 {
   "sourceLanguage": "ja",
-  "strings": {
-    "完了して戻る": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Done"
-          }
-        }
-      }
-    },
-    "色": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Color"
-          }
-        }
-      }
-    }
-  },
+  "strings": {},
   "version": "1.0"
 }

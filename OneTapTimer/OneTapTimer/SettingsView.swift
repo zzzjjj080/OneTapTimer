@@ -3,9 +3,9 @@ import WatchKit
 import OneTapTimerCore
 import OneTapTimerUI
 
-/// 時間を変える画面。**±10秒・±1分・完了の5つだけ。** Digital Crown は1目盛りが10秒。
+/// 時間を変える画面。**同じ大きさの4つのボタン（±10秒・±1分）＋ 色 ＋ 完了。**
 ///
-/// やめるときはクラウンを押して文字盤へ戻る（裏へ回った時点で設定は閉じる）。
+/// Digital Crown は1目盛りが10秒。やめるときはクラウンを押して文字盤へ戻る。
 struct SettingsView: View {
     @Environment(Runner.self) private var runner
 
@@ -18,61 +18,37 @@ struct SettingsView: View {
     private var screen: CGSize { WKInterfaceDevice.current().screenBounds.size }
     /// 40mm は詰める
     private var tiny: Bool { screen.height < 210 }
+
     /// 上に空ける高さ。ここにシステムの時計が出る
-    private var clockReserve: CGFloat { tiny ? 20 : 26 }
+    private var clockReserve: CGFloat { tiny ? 18 : 24 }
+    private var sideInset: CGFloat { tiny ? 8 : 10 }
+    private var gap: CGFloat { tiny ? 5 : 7 }
+    /// ボタン1つぶんの幅。2列に割る。**寸法はレイアウトに聞かず、画面の実寸から決める**（引き継ぎ書 4-62b）
+    private var buttonSize: CGSize {
+        CGSize(width: (screen.width - sideInset * 2 - gap) / 2, height: tiny ? 34 : 40)
+    }
 
     var body: some View {
         ZStack {
             Color(hex: PaletteHex.ground).ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                DurationEditor(value: $draft,
-                               fineSize: CGSize(width: tiny ? 66 : 78, height: tiny ? 38 : 44),
-                               valueSize: tiny ? 32 : 40, labelSize: 11,
+            VStack(spacing: gap) {
+                DurationEditor(value: $draft, buttonSize: buttonSize, spacing: gap,
+                               valueSize: tiny ? 32 : 38,
                                onStep: { up in
                                    runner.stepped(up: up)
                                    crown = DurationRule.crown(fromSeconds: draft)
                                })
 
-                Spacer(minLength: 4)
-
-                // 色。押すたびに 1→2→…→10→1。水の色で塗って、いまの番号を出す
-                Button {
-                    runner.cycleTheme()
-                } label: {
-                    HStack(spacing: 4) {
-                        Text("色")
-                        Text("\(runner.theme)").fontWeight(.heavy).monospacedDigit()
-                    }
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color(hex: PaletteHex.ground))
-                    .frame(width: 72, height: tiny ? 24 : 28)
-                    .background(Capsule().fill(
-                        LinearGradient(colors: [Color(hex: runner.themeHex.liquidTop), Color(hex: runner.themeHex.liquidBottom)],
-                                       startPoint: .top, endPoint: .bottom)))
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("theme")
-
-                Spacer(minLength: 4)
-
-                Button {
-                    runner.apply(duration: draft)
-                } label: {
-                    Text("完了して戻る")
-                        .font(.system(size: 13, weight: .bold))
-                        .tracking(0.5)
-                        // 塗りがティールなので、文字は黒。こちらのほうが読める
-                        .foregroundStyle(Color(hex: PaletteHex.ground))
-                        .frame(maxWidth: .infinity, minHeight: tiny ? 30 : 34)
-                        .background(Capsule().fill(Color(hex: runner.themeHex.liquidTop)))
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("go")
+                SettingsFooter(theme: runner.themeHex, number: runner.theme,
+                               height: buttonSize.height, spacing: gap,
+                               onColor: { runner.cycleTheme() },
+                               onDone: { runner.apply(duration: draft) })
+                    .padding(.top, gap * 0.4)
             }
             .padding(.top, clockReserve)
-            .padding(.horizontal, 12)
-            .padding(.bottom, tiny ? 6 : 8)
+            .padding(.horizontal, sideInset)
+            .padding(.bottom, tiny ? 4 : 6)
         }
         .ignoresSafeArea()
         .focusable()

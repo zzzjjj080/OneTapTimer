@@ -41,6 +41,10 @@ public final class Runner {
     /// 腕を上げて終わりを確かめただけで、次の90秒が走り出さないように。
     public static let doneGrace: TimeInterval = 30
 
+    /// アプリの外から開いたか。**「開いたら始まる」はここでしか起きない。**
+    /// 腕を下ろして上げただけ（`.inactive` → `.active`）で始まってしまうのを防ぐ。
+    private var cameFromOutside = true
+
     public let notifier: EndScheduling
     public let gate = NotificationGate()
 
@@ -79,29 +83,57 @@ public final class Runner {
 
     // MARK: - 画面の出入り
 
-    /// 前に出た。**ここで始める。**
+    /// 前に出た。**アプリの外から開いたときだけ、ここで始める。**
     public func activate(now: Date = .now) {
         isActive = true
         gate.isForeground = true
 
-        // 裏で終わっていたぶんに追いつく。ここでは鳴らさない（通知が済ませている）
+        // 腕を下ろしている間に終わっていたぶんに追いつく。ここでは鳴らさない（通知が済ませている）
         _ = engine.advance(to: now)
 
-        if engine.isFinished, (engine.sinceFinished(at: now) ?? .infinity) > Self.doneGrace {
-            start(now: now)
+        let opened = cameFromOutside
+        cameFromOutside = false
+
+        if opened {
+            if engine.isCancelled {
+                // やめたものを見せ直しても仕方がない。開いた ＝ 始めたい
+                start(now: now)
+            } else if engine.isFinished, (engine.sinceFinished(at: now) ?? .infinity) > Self.doneGrace {
+                start(now: now)
+            } else if !engine.isFinished {
+                startTicking()
+            }
         } else if !engine.isFinished {
             startTicking()
         }
         persist()
     }
 
-    /// 裏へ回った。前に出るまで時計は止めてよい（通知が代わりに鳴る）。
-    /// 設定を開いたまま出ていったなら閉じる（クラウンを押す ＝ やめる）。
-    public func deactivate() {
+    /// 腕を下ろした（画面が暗くなった）。**タイマーはそのまま。**
+    ///
+    /// この間はこちらのコードが動かないので、終わりの合図は通知に任せる
+    /// （`gate` を下ろすと、前に出ていないものとして通知が鳴る）。
+    public func goIdle() {
         isActive = false
         gate.isForeground = false
         stopTicking()
+    }
+
+    /// アプリから出た（クラウンを押した／ほかのアプリへ移った）。**走っているものは止める。**
+    ///
+    /// 裏で動かすことは考えていない。出たあとに通知だけ鳴るのが一番困るので、
+    /// タイマーも予約した通知も、ここで一緒に片付ける。
+    public func leave(now: Date = .now) {
+        isActive = false
+        gate.isForeground = false
+        cameFromOutside = true
+        stopTicking()
         screen = .run
+        if !engine.isFinished {
+            engine.cancel(at: now)
+        }
+        notifier.cancel()
+        persist()
     }
 
     // MARK: - 操作
@@ -121,7 +153,7 @@ public final class Runner {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
-    /// 画面を長押しした。**止める。** 開き直したときの扱いは「終わった」と同じ
+    /// 画面を長押しした。**止める。** 開き直したら、待たずに新しく始まる
     public func cancel(now: Date = .now) {
         guard !engine.isFinished else { return }
         engine.cancel(at: now)

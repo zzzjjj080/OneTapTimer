@@ -17,13 +17,11 @@ struct RunView: View {
                 .onLongPressGesture(minimumDuration: 0.7) { runner.cancel() }
                 .accessibilityIdentifier("face")
 
-            // 上の中央。時刻は右上に出るので、少し左に寄せて重ねない
-            SettingPill(skin: Skin.of(runner.engine, at: .now, theme: runner.themeHex),
-                        duration: runner.duration, height: 30) {
+            // 上の中央。システムの時刻は右上に出るので、真ん中は空いている
+            SettingButton(skin: Skin.of(runner.engine, at: .now, theme: runner.themeHex), size: 42) {
                 runner.openSettings()
             }
-            .padding(.top, 8)
-            .padding(.trailing, 36)
+            .padding(.top, 6)
         }
         // 安全領域を外すのはここ1か所だけ。内側で重ねて外すと、かえって狭くなる
         .ignoresSafeArea()

@@ -18,14 +18,18 @@ struct OneTapTimerPhoneApp: App {
             PhoneRootView()
                 .environment(runner)
         }
+        // Watch と同じ。**出ていったら止める。裏では動かさない。**
         .onChange(of: phase, initial: true) { _, new in
             switch new {
             case .active:
                 runner.activate()
                 // 90秒眺めるものなので、その間は画面を消させない
                 UIApplication.shared.isIdleTimerDisabled = true
+            case .background:
+                runner.leave()
+                UIApplication.shared.isIdleTimerDisabled = false
             default:
-                runner.deactivate()
+                runner.goIdle()
                 UIApplication.shared.isIdleTimerDisabled = false
             }
         }

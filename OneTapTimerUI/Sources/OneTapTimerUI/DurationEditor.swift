@@ -1,44 +1,43 @@
 import SwiftUI
 import OneTapTimerCore
 
-/// 時間を合わせる部品。大きな値と、**±10秒（大きめ）・±1分（小さめ）の4つだけ。**
+/// 時間を合わせる部品。**大きな値と、同じ大きさの4つのボタン。**
 ///
-/// チップも「開始」も付けない。決定のボタンは外側（Watch は「完了して戻る」、iPhone はシート）が持つ。
+/// 上の段が ±10秒（基本はこれで合わせる）、下の段が ±1分。
+/// 大きさを揃えて2×2に並べると、どこを押しても外さない。
+/// 決定のボタンは外側（Watch もシートも「完了」）が持つ。
 /// Digital Crown も外側で付ける（`value` を書き換えればここは追従する）。
 public struct DurationEditor: View {
     @Binding public var value: Int
-    /// ±10秒 のボタンの大きさ。±1分 はこれより一回り小さい
-    public var fineSize: CGSize
+    /// ボタン1つぶんの大きさ。4つとも同じ
+    public var buttonSize: CGSize
+    public var spacing: CGFloat
     public var valueSize: CGFloat
-    public var labelSize: CGFloat
     public var onStep: (Bool) -> Void
 
-    public init(value: Binding<Int>, fineSize: CGSize, valueSize: CGFloat, labelSize: CGFloat,
+    public init(value: Binding<Int>, buttonSize: CGSize, spacing: CGFloat, valueSize: CGFloat,
                 onStep: @escaping (Bool) -> Void) {
         _value = value
-        self.fineSize = fineSize; self.valueSize = valueSize; self.labelSize = labelSize
+        self.buttonSize = buttonSize; self.spacing = spacing; self.valueSize = valueSize
         self.onStep = onStep
     }
 
-    private var coarseSize: CGSize { CGSize(width: fineSize.width * 0.9, height: fineSize.height * 0.72) }
-
     public var body: some View {
-        VStack(spacing: fineSize.height * 0.18) {
+        VStack(spacing: spacing) {
             valueText
+                .padding(.bottom, spacing * 0.5)
                 .accessibilityIdentifier("value")
 
-            // 10秒。基本はこれで合わせるので、大きく・上に
-            HStack(spacing: fineSize.width * 0.18) {
-                StepButton(title: "−10", unit: "秒", size: fineSize, bold: true) { change(by: -DurationRule.fineStep) }
+            HStack(spacing: spacing) {
+                StepButton(title: "−10", unit: "秒", size: buttonSize) { change(by: -DurationRule.fineStep) }
                     .accessibilityIdentifier("minus10")
-                StepButton(title: "+10", unit: "秒", size: fineSize, bold: true) { change(by: DurationRule.fineStep) }
+                StepButton(title: "+10", unit: "秒", size: buttonSize) { change(by: DurationRule.fineStep) }
                     .accessibilityIdentifier("plus10")
             }
-            // 1分。たまに使う
-            HStack(spacing: fineSize.width * 0.18) {
-                StepButton(title: "−1", unit: "分", size: coarseSize, bold: false) { change(by: -DurationRule.coarseStep) }
+            HStack(spacing: spacing) {
+                StepButton(title: "−1", unit: "分", size: buttonSize) { change(by: -DurationRule.coarseStep) }
                     .accessibilityIdentifier("minus60")
-                StepButton(title: "+1", unit: "分", size: coarseSize, bold: false) { change(by: DurationRule.coarseStep) }
+                StepButton(title: "+1", unit: "分", size: buttonSize) { change(by: DurationRule.coarseStep) }
                     .accessibilityIdentifier("plus60")
             }
         }
@@ -83,7 +82,6 @@ struct StepButton: View {
     let title: String
     let unit: LocalizedStringKey
     let size: CGSize
-    let bold: Bool
     let step: () -> Void
 
     @State private var holding: Task<Void, Never>?
@@ -91,17 +89,18 @@ struct StepButton: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 1) {
             Text(title)
-                .font(.system(size: size.height * (bold ? 0.5 : 0.46), weight: .heavy, design: .rounded))
+                .font(.system(size: size.height * 0.48, weight: .heavy, design: .rounded))
             Text(unit, bundle: .module)
-                .font(.system(size: size.height * 0.3, weight: .semibold))
+                .font(.system(size: size.height * 0.29, weight: .semibold))
         }
         .monospacedDigit()
         .lineLimit(1)
         .minimumScaleFactor(0.6)
         .foregroundStyle(Color(hex: PaletteHex.ink))
         .frame(width: size.width, height: size.height)
-        .background(Capsule().fill(Color.well.opacity(holding == nil ? 1 : 1.6)))
-        .contentShape(Capsule())
+        .background(RoundedRectangle(cornerRadius: size.height * 0.34, style: .continuous)
+            .fill(Color.well.opacity(holding == nil ? 1 : 1.6)))
+        .contentShape(Rectangle())
         // 押し続けても `perform` が呼ばれないよう、長い時間を指定しておく。
         .onLongPressGesture(minimumDuration: 3600, pressing: { pressing in
             if pressing { begin() } else { end() }
@@ -126,5 +125,62 @@ struct StepButton: View {
     private func end() {
         holding?.cancel()
         holding = nil
+    }
+}
+
+
+/// 設定画面の下段。**色の見本（丸）と「完了」（横長）。**
+///
+/// 色は押すたびに次の組へ。番号を丸の中に出すので、いま何番かが分かる。
+/// 完了は残り幅いっぱいにして、いちばん押しやすい場所にする。
+public struct SettingsFooter: View {
+    public var theme: ThemeHex
+    public var number: Int
+    public var height: CGFloat
+    public var spacing: CGFloat
+    public var onColor: () -> Void
+    public var onDone: () -> Void
+
+    public init(theme: ThemeHex, number: Int, height: CGFloat, spacing: CGFloat,
+                onColor: @escaping () -> Void, onDone: @escaping () -> Void) {
+        self.theme = theme; self.number = number; self.height = height; self.spacing = spacing
+        self.onColor = onColor; self.onDone = onDone
+    }
+
+    private var fill: LinearGradient {
+        LinearGradient(colors: [Color(hex: theme.liquidTop), Color(hex: theme.liquidBottom)],
+                       startPoint: .top, endPoint: .bottom)
+    }
+
+    public var body: some View {
+        HStack(spacing: spacing) {
+            Button(action: onColor) {
+                ZStack {
+                    Circle().fill(fill)
+                    Text("\(number)")
+                        .font(.system(size: height * 0.44, weight: .heavy, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(Color(hex: PaletteHex.ground))
+                }
+                .frame(width: height, height: height)
+                .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("色", bundle: .module))
+            .accessibilityIdentifier("theme")
+
+            Button(action: onDone) {
+                Text("完了", bundle: .module)
+                    .font(.system(size: height * 0.4, weight: .bold))
+                    .tracking(1)
+                    // 塗りが明るいので、文字は地の色（ほぼ黒）。こちらのほうが読める
+                    .foregroundStyle(Color(hex: PaletteHex.ground))
+                    .frame(maxWidth: .infinity, minHeight: height)
+                    .background(Capsule().fill(fill))
+                    .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("go")
+        }
     }
 }

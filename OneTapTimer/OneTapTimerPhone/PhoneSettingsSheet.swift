@@ -8,60 +8,21 @@ struct PhoneSettingsSheet: View {
     @State private var draft: Int = DurationRule.standard
 
     var body: some View {
-        VStack(spacing: 28) {
-            HStack {
-                Button {
-                    runner.closeSettings()
-                } label: {
-                    Text("戻る")
-                        .font(.system(size: 17))
-                        .foregroundStyle(Color(hex: PaletteHex.inkDim))
-                        .frame(minWidth: 60, minHeight: 44, alignment: .leading)
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("back")
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-
-            DurationEditor(value: $draft, fineSize: CGSize(width: 140, height: 64),
-                           valueSize: 76, labelSize: 17,
+        VStack(spacing: 24) {
+            DurationEditor(value: $draft, buttonSize: CGSize(width: 150, height: 64), spacing: 14,
+                           valueSize: 72,
                            onStep: { runner.stepped(up: $0) })
-
-            Button {
-                runner.cycleTheme()
-            } label: {
-                HStack(spacing: 6) {
-                    Text("色")
-                    Text("\(runner.theme)").fontWeight(.heavy).monospacedDigit()
-                }
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(Color(hex: PaletteHex.ground))
-                .frame(width: 120, height: 44)
-                .background(Capsule().fill(
-                    LinearGradient(colors: [Color(hex: runner.themeHex.liquidTop), Color(hex: runner.themeHex.liquidBottom)],
-                                   startPoint: .top, endPoint: .bottom)))
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("theme")
 
             Spacer(minLength: 0)
 
-            Button {
-                runner.apply(duration: draft)
-            } label: {
-                Text("完了して戻る")
-                    .font(.system(size: 19, weight: .bold))
-                    .foregroundStyle(Color(hex: PaletteHex.ground))
-                    .frame(maxWidth: .infinity, minHeight: 58)
-                    .background(Capsule().fill(Color(hex: runner.themeHex.liquidTop)))
-            }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 20)
-            .accessibilityIdentifier("go")
+            SettingsFooter(theme: runner.themeHex, number: runner.theme,
+                           height: 58, spacing: 14,
+                           onColor: { runner.cycleTheme() },
+                           onDone: { runner.apply(duration: draft) })
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
         }
-        .padding(.top, 12)
+        .padding(.top, 28)
         .onAppear { draft = runner.duration }
     }
 }

@@ -43,37 +43,63 @@ struct RunnerTests {
         #expect(s.scheduled == [t0 + 90])
     }
 
-    @Test func 走っている最中に開き直したら続き() {
-        let d = fresh()
-        let r1 = Runner(haptics: SpyHaptics(), notifier: SpyScheduler(), defaults: d, now: t0)
-        r1.activate(now: t0)
-        r1.deactivate()
-        // プロセスが落ちて、40秒後に開き直した
+    @Test func 腕を下ろして上げただけなら続き() {
         let h = SpyHaptics()
-        let r2 = Runner(haptics: h, notifier: SpyScheduler(), defaults: d, now: t0 + 40)
-        r2.activate(now: t0 + 40)
-        #expect(r2.engine.remaining(at: t0 + 40) == 50)
-        #expect(h.log.isEmpty)   // 始め直していない
+        let r = Runner(haptics: h, notifier: SpyScheduler(), defaults: fresh(), now: t0)
+        r.activate(now: t0)
+        r.goIdle()
+        r.activate(now: t0 + 40)
+        #expect(r.engine.remaining(at: t0 + 40) == 50)
+        #expect(h.log == ["start"])   // 始め直していない
     }
 
-    @Test func 終わった直後に開いたらおわりのまま() {
-        let d = fresh()
-        let r1 = Runner(haptics: SpyHaptics(), notifier: SpyScheduler(), defaults: d, now: t0)
-        r1.activate(now: t0)
-        r1.deactivate()
-        // 裏で終わって、10秒後に腕を上げた
+    @Test func クラウンで出たら止まって通知も消える() {
+        let h = SpyHaptics(), s = SpyScheduler()
+        let r = Runner(haptics: h, notifier: s, defaults: fresh(), now: t0)
+        r.activate(now: t0)
+        r.leave(now: t0 + 30)
+        #expect(r.engine.isCancelled)
+        #expect(s.cancels == 1)
+        #expect(h.log == ["start"])   // 出ていく人を震わせない
+    }
+
+    @Test func 出たあとに開き直したら待たずに始まる() {
+        let h = SpyHaptics(), s = SpyScheduler(), d = fresh()
+        let r = Runner(haptics: h, notifier: s, defaults: d, now: t0)
+        r.activate(now: t0)
+        r.leave(now: t0 + 30)
+        r.activate(now: t0 + 35)
+        #expect(!r.engine.isFinished)
+        #expect(r.engine.remaining(at: t0 + 35) == 90)
+        #expect(h.log == ["start", "start"])
+    }
+
+    @Test func 長押しでやめたあと腕を上げても始まらない() {
+        let r = Runner(haptics: SpyHaptics(), notifier: SpyScheduler(), defaults: fresh(), now: t0)
+        r.activate(now: t0)
+        r.cancel(now: t0 + 10)
+        r.goIdle()
+        r.activate(now: t0 + 60)
+        #expect(r.engine.isCancelled)   // 見ていただけ。始めない
+    }
+
+    @Test func 腕を下ろしている間に終わったらおわりのまま() {
         let h = SpyHaptics()
-        let r2 = Runner(haptics: h, notifier: SpyScheduler(), defaults: d, now: t0 + 100)
-        r2.activate(now: t0 + 100)
-        #expect(r2.engine.isFinished)
-        #expect(h.log.isEmpty)   // 通知が鳴らしているので、ここでは鳴らさない
+        let r = Runner(haptics: h, notifier: SpyScheduler(), defaults: fresh(), now: t0)
+        r.activate(now: t0)
+        r.goIdle()
+        // 腕を下ろしている間に終わり、10秒後に腕を上げた
+        r.activate(now: t0 + 100)
+        #expect(r.engine.isFinished)
+        #expect(!r.engine.isCancelled)
+        #expect(h.log == ["start"])   // 通知が鳴らしているので、ここでは鳴らさない
     }
 
     @Test func 終わってしばらく経って開いたら新しく始まる() {
         let d = fresh()
         let r1 = Runner(haptics: SpyHaptics(), notifier: SpyScheduler(), defaults: d, now: t0)
         r1.activate(now: t0)
-        r1.deactivate()
+        r1.goIdle()
         let h = SpyHaptics(), s = SpyScheduler()
         let r2 = Runner(haptics: h, notifier: s, defaults: d, now: t0 + 600)
         r2.activate(now: t0 + 600)
@@ -138,18 +164,13 @@ struct RunnerTests {
         #expect(r.engine.isCancelled)
         #expect(s.cancels == 1)
         #expect(h.log == ["start", "cancel"])
-        // 止めてすぐ開き直しても始めない。30秒過ぎたら始める
-        r.deactivate(); r.activate(now: t0 + 40)
-        #expect(r.engine.isCancelled)
-        r.deactivate(); r.activate(now: t0 + 60)
-        #expect(!r.engine.isFinished)
     }
 
-    @Test func 設定を開いたまま裏へ回ったら閉じる() {
+    @Test func 設定を開いたまま出ていったら閉じる() {
         let r = Runner(haptics: SpyHaptics(), notifier: SpyScheduler(), defaults: fresh(), now: t0)
         r.activate(now: t0)
         r.openSettings()
-        r.deactivate()
+        r.leave(now: t0 + 3)
         #expect(r.screen == .run)
     }
 

@@ -16,8 +16,7 @@ struct PhoneRootView: View {
             .onLongPressGesture(minimumDuration: 0.7) { runner.cancel() }
             .accessibilityIdentifier("face")
 
-            SettingPill(skin: Skin.of(runner.engine, at: .now, theme: runner.themeHex),
-                        duration: runner.duration, height: 44) {
+            SettingButton(skin: Skin.of(runner.engine, at: .now, theme: runner.themeHex), size: 56) {
                 runner.openSettings()
             }
             .padding(.top, 8)

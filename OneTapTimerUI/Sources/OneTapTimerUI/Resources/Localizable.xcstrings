@@ -99,6 +99,17 @@
           }
         }
       }
+    },
+    "完了": {
+      "comment": "設定を決めて戻る",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
