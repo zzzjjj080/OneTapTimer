@@ -9,6 +9,13 @@
 	<key>WKApplication</key>
 	<true/>
 
+	<!-- 走っている間アプリを前面に留めるため（WKExtendedRuntimeSession）。
+	     これが無いとセッションが始まらず、1分ほどで文字盤に戻ってタイマーの合図がずれる -->
+	<key>WKBackgroundModes</key>
+	<array>
+		<string>self-care</string>
+	</array>
+
 	<!-- 配信の器になる iOS アプリ。Xcode は watchOS のアーカイブを App Store へ出せないので、
 	     iOS アプリの中に入れて出す（引き継ぎ書 4-91） -->
 	<key>WKCompanionAppBundleIdentifier</key>

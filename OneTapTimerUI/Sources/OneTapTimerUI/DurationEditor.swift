@@ -1,10 +1,12 @@
 import SwiftUI
 import OneTapTimerCore
 
-/// 時間を合わせる部品。**大きな値と、同じ大きさの4つのボタン。**
+/// 時間を合わせる部品。**大きな値をはさんで、上に ±60秒、下に ±10秒。**
 ///
-/// 上の段が ±10秒（基本はこれで合わせる）、下の段が ±1分。
-/// 大きさを揃えて2×2に並べると、どこを押しても外さない。
+/// 実機で触って、この並びに落ち着いた。粗いほうを上に置くと、
+/// 「大きく動かしてから、下で細かく詰める」が上から下への動きになる。
+/// 4つとも同じ大きさなので、どこを押しても外さない。
+/// 単位は `s` に統一した（`10s` `60s` で通じるし、分と秒が混ざらない）。
 /// 決定のボタンは外側（Watch もシートも「完了」）が持つ。
 /// Digital Crown も外側で付ける（`value` を書き換えればここは追従する）。
 public struct DurationEditor: View {
@@ -24,21 +26,22 @@ public struct DurationEditor: View {
 
     public var body: some View {
         VStack(spacing: spacing) {
+            HStack(spacing: spacing) {
+                StepButton(title: "−60", unit: "s", size: buttonSize) { change(by: -DurationRule.coarseStep) }
+                    .accessibilityIdentifier("minus60")
+                StepButton(title: "+60", unit: "s", size: buttonSize) { change(by: DurationRule.coarseStep) }
+                    .accessibilityIdentifier("plus60")
+            }
+
             valueText
-                .padding(.bottom, spacing * 0.5)
+                .padding(.vertical, spacing * 0.25)
                 .accessibilityIdentifier("value")
 
             HStack(spacing: spacing) {
-                StepButton(title: "−10", unit: "秒", size: buttonSize) { change(by: -DurationRule.fineStep) }
+                StepButton(title: "−10", unit: "s", size: buttonSize) { change(by: -DurationRule.fineStep) }
                     .accessibilityIdentifier("minus10")
-                StepButton(title: "+10", unit: "秒", size: buttonSize) { change(by: DurationRule.fineStep) }
+                StepButton(title: "+10", unit: "s", size: buttonSize) { change(by: DurationRule.fineStep) }
                     .accessibilityIdentifier("plus10")
-            }
-            HStack(spacing: spacing) {
-                StepButton(title: "−1", unit: "分", size: buttonSize) { change(by: -DurationRule.coarseStep) }
-                    .accessibilityIdentifier("minus60")
-                StepButton(title: "+1", unit: "分", size: buttonSize) { change(by: DurationRule.coarseStep) }
-                    .accessibilityIdentifier("plus60")
             }
         }
     }
@@ -80,7 +83,8 @@ public struct DurationEditor: View {
 /// 押しっぱなしを拾えない。`pressing:` なら押した瞬間と離した瞬間の両方が来る。
 struct StepButton: View {
     let title: String
-    let unit: LocalizedStringKey
+    /// `s` だけ。訳す必要がないので素の文字で持つ
+    let unit: String
     let size: CGSize
     let step: () -> Void
 
@@ -90,8 +94,9 @@ struct StepButton: View {
         HStack(alignment: .firstTextBaseline, spacing: 1) {
             Text(title)
                 .font(.system(size: size.height * 0.48, weight: .heavy, design: .rounded))
-            Text(unit, bundle: .module)
-                .font(.system(size: size.height * 0.29, weight: .semibold))
+            Text(unit)
+                .font(.system(size: size.height * 0.3, weight: .semibold))
+                .foregroundStyle(Color(hex: PaletteHex.ink).opacity(0.6))
         }
         .monospacedDigit()
         .lineLimit(1)

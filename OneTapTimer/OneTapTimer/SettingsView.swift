@@ -3,7 +3,7 @@ import WatchKit
 import OneTapTimerCore
 import OneTapTimerUI
 
-/// 時間を変える画面。**同じ大きさの4つのボタン（±10秒・±1分）＋ 色 ＋ 完了。**
+/// 時間を変える画面。**±60s ／ 値 ／ ±10s ／ 色と完了。**
 ///
 /// Digital Crown は1目盛りが10秒。やめるときはクラウンを押して文字盤へ戻る。
 struct SettingsView: View {
@@ -20,12 +20,12 @@ struct SettingsView: View {
     private var tiny: Bool { screen.height < 210 }
 
     /// 上に空ける高さ。ここにシステムの時計が出る
-    private var clockReserve: CGFloat { tiny ? 18 : 24 }
+    private var clockReserve: CGFloat { tiny ? 16 : 20 }
     private var sideInset: CGFloat { tiny ? 8 : 10 }
     private var gap: CGFloat { tiny ? 5 : 7 }
     /// ボタン1つぶんの幅。2列に割る。**寸法はレイアウトに聞かず、画面の実寸から決める**（引き継ぎ書 4-62b）
     private var buttonSize: CGSize {
-        CGSize(width: (screen.width - sideInset * 2 - gap) / 2, height: tiny ? 34 : 40)
+        CGSize(width: (screen.width - sideInset * 2 - gap) / 2, height: tiny ? 34 : 42)
     }
 
     var body: some View {
@@ -34,7 +34,7 @@ struct SettingsView: View {
 
             VStack(spacing: gap) {
                 DurationEditor(value: $draft, buttonSize: buttonSize, spacing: gap,
-                               valueSize: tiny ? 32 : 38,
+                               valueSize: tiny ? 30 : 36,
                                onStep: { up in
                                    runner.stepped(up: up)
                                    crown = DurationRule.crown(fromSeconds: draft)

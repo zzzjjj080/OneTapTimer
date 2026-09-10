@@ -4,7 +4,7 @@ import OneTapTimerUI
 
 @main
 struct OneTapTimerApp: App {
-    @State private var runner = Runner(haptics: Haptics())
+    @State private var runner = Runner(haptics: Haptics(), keeper: FrontKeeper())
     @Environment(\.scenePhase) private var phase
 
     var body: some Scene {

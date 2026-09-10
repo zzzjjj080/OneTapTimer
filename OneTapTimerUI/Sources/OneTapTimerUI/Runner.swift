@@ -47,6 +47,10 @@ public final class Runner {
 
     public let notifier: EndScheduling
     public let gate = NotificationGate()
+    /// 走っている間アプリを前面に留めるもの（Watch だけ。iPhone は nil）
+    public var keeper: ForegroundKeeping? {
+        didSet { keeper?.onChange = { [weak self] in self?.keeperChanged() } }
+    }
 
     private let haptics: TimerHaptics
     private let defaults: UserDefaults
@@ -56,7 +60,8 @@ public final class Runner {
     private static let durationKey = SharedStore.durationKey
     private static let engineKey = SharedStore.engineKey
 
-    public init(haptics: TimerHaptics, notifier: EndScheduling? = nil,
+    public init(haptics: TimerHaptics, keeper: ForegroundKeeping? = nil,
+                notifier: EndScheduling? = nil,
                 defaults: UserDefaults = SharedStore.defaults, now: Date = .now) {
         self.haptics = haptics
         self.notifier = notifier ?? EndNotifier()
@@ -79,6 +84,10 @@ public final class Runner {
             _ = e.advance(to: now)
             engine = e
         }
+
+        // `didSet` は init の中では走らないので、ここで結び直す
+        self.keeper = keeper
+        keeper?.onChange = { [weak self] in self?.keeperChanged() }
     }
 
     // MARK: - 画面の出入り
@@ -93,6 +102,8 @@ public final class Runner {
 
         let opened = cameFromOutside
         cameFromOutside = false
+
+        updateGate()
 
         if opened {
             if engine.isCancelled {
@@ -111,12 +122,12 @@ public final class Runner {
 
     /// 腕を下ろした（画面が暗くなった）。**タイマーはそのまま。**
     ///
-    /// この間はこちらのコードが動かないので、終わりの合図は通知に任せる
-    /// （`gate` を下ろすと、前に出ていないものとして通知が鳴る）。
+    /// 前面に留まれているなら、こちらのコードはまだ動くので時計も止めない。
+    /// 留まれていないときだけ、終わりの合図を通知に任せる（`gate` を下ろす）。
     public func goIdle() {
         isActive = false
-        gate.isForeground = false
-        stopTicking()
+        updateGate()
+        if keeper?.isKeeping != true { stopTicking() }
     }
 
     /// アプリから出た（クラウンを押した／ほかのアプリへ移った）。**走っているものは止める。**
@@ -125,9 +136,10 @@ public final class Runner {
     /// タイマーも予約した通知も、ここで一緒に片付ける。
     public func leave(now: Date = .now) {
         isActive = false
-        gate.isForeground = false
         cameFromOutside = true
         stopTicking()
+        keeper?.end()
+        updateGate()
         screen = .run
         if !engine.isFinished {
             engine.cancel(at: now)
@@ -158,7 +170,9 @@ public final class Runner {
         guard !engine.isFinished else { return }
         engine.cancel(at: now)
         stopTicking()
+        keeper?.end()
         notifier.cancel()
+        updateGate()
         haptics.cancelled()
         persist()
     }
@@ -188,11 +202,34 @@ public final class Runner {
     private func start(now: Date) {
         engine = TimerEngine(duration: duration, startedAt: now)
         haptics.started()
+        // 前面に留まれなかったときの保険として、必ず予約しておく。
+        // 留まれている間は ``gate`` が表示を抑えるので、二重には鳴らない
         notifier.schedule(endAt: engine.endAt, duration: duration)
+        keeper?.begin()
         persist()
-        if isActive { startTicking() }
+        startTicking()
     }
 
+    /// 前面に留まれるかどうかが変わった。
+    private func keeperChanged() {
+        updateGate()
+        if keeper?.isKeeping == true {
+            startTicking()
+        } else if !isActive {
+            // 留まれなくなった。ここから先は通知が頼り
+            stopTicking()
+        }
+    }
+
+    /// 通知を出すかどうか。**自分で鳴らせるときだけ抑える。**
+    private func updateGate() {
+        gate.isForeground = isActive || keeper?.isKeeping == true
+    }
+
+    /// 終わりを捕まえるだけの時計。**画面の数字はここでは動かさない**（`TimelineView` が時刻から描く）。
+    ///
+    /// 終わるまで寝て、起きたら見る。0.2秒ごとに起こすと、1時間のタイマーで
+    /// 18000回起きることになり、前面に留まっている間ずっと電池を使う。
     private func startTicking() {
         stopTicking()
         guard !engine.isFinished else { return }
@@ -200,8 +237,8 @@ public final class Runner {
             while !Task.isCancelled {
                 guard let self else { return }
                 let left = self.engine.remaining(at: .now)
-                // 終わる直前まで寝て、終わりの瞬間だけ細かく見る
-                try? await Task.sleep(for: .seconds(min(0.2, max(0.02, left))))
+                // 長く寝すぎると、ずれたときに取り返せない。最大60秒で起きて測り直す
+                try? await Task.sleep(for: .seconds(min(60, max(0.02, left))))
                 guard !Task.isCancelled else { return }
                 if self.tick() { return }
             }
@@ -218,6 +255,10 @@ public final class Runner {
         let events = engine.advance(to: .now)
         guard events.contains(.finished) else { return false }
         haptics.finished()
+        // 鳴らし終えたら前面に留まる必要は無い。留めたままだと電池を使い続ける
+        keeper?.end()
+        notifier.cancel()
+        updateGate()
         persist()
         return true
     }

@@ -22,6 +22,16 @@ final class SpyScheduler: EndScheduling {
 }
 
 @MainActor
+final class SpyKeeper: ForegroundKeeping {
+    var isKeeping = false
+    var onChange: (() -> Void)?
+    var begins = 0
+    var ends = 0
+    func begin() { begins += 1; isKeeping = true; onChange?() }
+    func end() { if isKeeping { ends += 1 }; isKeeping = false; onChange?() }
+}
+
+@MainActor
 struct RunnerTests {
     let t0 = Date(timeIntervalSince1970: 2_000_000)
 
@@ -172,6 +182,42 @@ struct RunnerTests {
         r.openSettings()
         r.leave(now: t0 + 3)
         #expect(r.screen == .run)
+    }
+
+    @Test func 前面に留まれている間は通知を抑える() {
+        let r = Runner(haptics: SpyHaptics(), notifier: SpyScheduler(), defaults: fresh(), now: t0)
+        let k = SpyKeeper()
+        r.keeper = k
+        r.activate(now: t0)
+        #expect(k.begins == 1)
+        #expect(r.gate.isForeground)
+        // 腕を下ろしても、留まれているなら通知は要らない
+        r.goIdle()
+        #expect(r.gate.isForeground)
+        // 留まれなくなったら通知に任せる
+        k.isKeeping = false
+        k.onChange?()
+        #expect(!r.gate.isForeground)
+    }
+
+    @Test func 出ていくときは前面の確保もやめる() {
+        let r = Runner(haptics: SpyHaptics(), notifier: SpyScheduler(), defaults: fresh(), now: t0)
+        let k = SpyKeeper()
+        r.keeper = k
+        r.activate(now: t0)
+        r.leave(now: t0 + 10)
+        #expect(k.ends == 1)
+        #expect(!k.isKeeping)
+        #expect(!r.gate.isForeground)
+    }
+
+    @Test func 長押しでやめたら前面の確保もやめる() {
+        let r = Runner(haptics: SpyHaptics(), notifier: SpyScheduler(), defaults: fresh(), now: t0)
+        let k = SpyKeeper()
+        r.keeper = k
+        r.activate(now: t0)
+        r.cancel(now: t0 + 10)
+        #expect(k.ends == 1)
     }
 
     @Test func 範囲外の設定は丸められる() {
