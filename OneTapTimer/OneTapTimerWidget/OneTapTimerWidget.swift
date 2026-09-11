@@ -4,8 +4,12 @@ import WidgetKit
 /// 文字盤に置いて、一発でアプリを開くためのコンプリケーション。
 ///
 /// **これがこのアプリの「ワンタップ」。** 押すとアプリが開き、開いた瞬間に走り出す。
-/// **設定してある秒数**（`90`）を出す。走っている間は残りのカウントダウンに変わり、
-/// 終わる時刻でひとりでに `90` へ戻る。状態は App Group の UserDefaults で受け取る。
+/// 出すのは**設定してある秒数**（`90`）だけ。
+///
+/// **残り時間は出さない。** アプリから出た時点でタイマーは止まるので、
+/// 文字盤を見ているときに「走っている」ことはあり得ない。
+/// 一度カウントダウンを出す作りにしたら、クラウンで抜けた直後に
+/// **古い残り時間が一瞬だけ残って見えた**（WidgetKit の描き直しが追いつかない）。
 @main
 struct OneTapTimerWidgetBundle: WidgetBundle {
     var body: some Widget { LaunchComplication() }
@@ -27,63 +31,48 @@ struct LaunchEntry: TimelineEntry {
     let date: Date
     /// 設定してある秒数
     let duration: Int
-    /// 走っていれば終わる時刻
-    let endAt: Date?
     /// 水の色（アプリの色の組と同じ）
     let liquid: Color
-    var isRunning: Bool { endAt.map { $0 > date } ?? false }
 }
 
-/// アプリが App Group に書いている状態。**キーと形は `OneTapTimerUI` の `SharedStore` / `TimerEngine` と同じ。**
-/// 拡張はパッケージを読み込まないので、自前で同じ形を読む。
+/// アプリが App Group に書いている設定。**キーは `OneTapTimerUI` の `SharedStore` と同じ。**
+/// 拡張はパッケージを読み込まないので、自前で同じキーを読む。
 enum SharedState {
     static let groupID = "group.com.zzzjjj080.OneTapTimer"
     static let standard = 90
-
-    private struct Engine: Decodable {
-        let duration: Int
-        let endAt: Date
-        let finishedAt: Date?
-    }
 
     /// 色の組の「水の上端」。アプリの `ThemeHex.all` と同じ並び（1〜10）
     static let liquids: [UInt32] = [0x22B8AE, 0x3B9DF0, 0x6C7BEA, 0xA56BE8, 0xF06AA8,
                                     0xF0605A, 0xF5923A, 0xE6C02A, 0x4FC46A, 0xA9B0B8]
 
-    static func read(now: Date) -> (duration: Int, endAt: Date?, liquid: Color) {
+    static func read() -> (duration: Int, liquid: Color) {
         let d = UserDefaults(suiteName: groupID)
         let saved = d?.integer(forKey: "duration") ?? 0
-        let duration = saved == 0 ? standard : saved
         let t = d?.integer(forKey: "theme") ?? 0
         let hex = (1...liquids.count).contains(t) ? liquids[t - 1] : liquids[0]
-        let liquid = Color(red: Double((hex >> 16) & 0xFF) / 255, green: Double((hex >> 8) & 0xFF) / 255, blue: Double(hex & 0xFF) / 255)
-        guard let data = d?.data(forKey: "engine"),
-              let e = try? JSONDecoder().decode(Engine.self, from: data),
-              e.finishedAt == nil, e.endAt > now else { return (duration, nil, liquid) }
-        return (duration, e.endAt, liquid)
+        return (saved == 0 ? standard : saved,
+                Color(red: Double((hex >> 16) & 0xFF) / 255,
+                      green: Double((hex >> 8) & 0xFF) / 255,
+                      blue: Double(hex & 0xFF) / 255))
     }
 }
 
 struct LaunchProvider: TimelineProvider {
-    func placeholder(in context: Context) -> LaunchEntry {
-        LaunchEntry(date: .now, duration: SharedState.standard, endAt: nil, liquid: Palette.liquid)
+    private func entry(_ date: Date) -> LaunchEntry {
+        let s = SharedState.read()
+        return LaunchEntry(date: date, duration: s.duration, liquid: s.liquid)
     }
+
+    func placeholder(in context: Context) -> LaunchEntry { entry(.now) }
 
     func getSnapshot(in context: Context, completion: @escaping (LaunchEntry) -> Void) {
-        let s = SharedState.read(now: .now)
-        completion(LaunchEntry(date: .now, duration: s.duration, endAt: s.endAt, liquid: s.liquid))
+        completion(entry(.now))
     }
 
-    /// 走っていれば「いま」と「終わる時刻」の2枚。終わる時刻で秒数の表示に戻る。
-    /// それ以外は1枚で、作り直させない（アプリが書き換えたときに reload させる）。
+    /// 時刻では変わらないので、作り直させない。
+    /// 設定が変わったときだけ、アプリ側から `WidgetCenter` に描き直させる。
     func getTimeline(in context: Context, completion: @escaping (Timeline<LaunchEntry>) -> Void) {
-        let now = Date()
-        let s = SharedState.read(now: now)
-        var entries = [LaunchEntry(date: now, duration: s.duration, endAt: s.endAt, liquid: s.liquid)]
-        if let end = s.endAt {
-            entries.append(LaunchEntry(date: end, duration: s.duration, endAt: nil, liquid: s.liquid))
-        }
-        completion(Timeline(entries: entries, policy: .never))
+        completion(Timeline(entries: [entry(.now)], policy: .never))
     }
 }
 
@@ -107,15 +96,7 @@ struct ComplicationView: View {
         }
     }
 
-    /// 走っていれば残り（システムが描く。`1:29` の形）、それ以外は設定してある秒数（`90`）。
-    @ViewBuilder
-    private var number: some View {
-        if let end = entry.endAt, entry.isRunning {
-            Text(timerInterval: entry.date...end, pauseTime: nil, countsDown: true, showsHours: false)
-        } else {
-            Text("\(entry.duration)")
-        }
-    }
+    private var number: Text { Text("\(entry.duration)") }
 
     @ViewBuilder
     private var content: some View {
@@ -124,7 +105,7 @@ struct ComplicationView: View {
             HStack(spacing: 4) {
                 Image(systemName: "timer")
                 number
-                if !entry.isRunning { Text("秒") }
+                Text("秒")
             }
         case .accessoryRectangular:
             HStack(spacing: 8) {
@@ -133,7 +114,7 @@ struct ComplicationView: View {
                     Text("ワンタップタイマー").font(.headline)
                     HStack(spacing: 3) {
                         number.font(.caption.weight(.semibold).monospacedDigit())
-                        Text(entry.isRunning ? "のこり" : "秒 · 押すと始まる").font(.caption2).foregroundStyle(.secondary)
+                        Text("秒 · 押すと始まる").font(.caption2).foregroundStyle(.secondary)
                     }
                 }
                 Spacer(minLength: 0)
@@ -144,7 +125,7 @@ struct ComplicationView: View {
                 .widgetLabel { number.monospacedDigit() }
         default:
             // 丸い枠：上にストップウォッチ、下に秒数
-            Face(liquid: entry.liquid) { AnyView(number) }
+            Face(liquid: entry.liquid, number: number)
         }
     }
 }
@@ -155,7 +136,7 @@ struct ComplicationView: View {
 /// 測らせると 0 や NaN が返ってきて描画ごと落ちることがある。寸法は決め打ちにする。
 struct Face: View {
     let liquid: Color
-    let number: () -> AnyView
+    let number: Text
     @Environment(\.widgetRenderingMode) private var mode
 
     var body: some View {
@@ -166,7 +147,7 @@ struct Face: View {
 
             VStack(spacing: -1) {
                 Mark(liquid: liquid, size: 13)
-                number()
+                number
                     .font(.system(size: 15, weight: .heavy, design: .rounded))
                     .monospacedDigit()
                     .minimumScaleFactor(0.5)

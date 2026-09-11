@@ -197,3 +197,42 @@ struct RunnerTests {
         #expect(r.duration == 10)
     }
 }
+
+@MainActor
+struct TapAndWristTests {
+    let t0 = Date(timeIntervalSince1970: 3_000_000)
+
+    private func fresh() -> UserDefaults {
+        let name = "test-\(UUID().uuidString)"
+        let d = UserDefaults(suiteName: name)!
+        d.removePersistentDomain(forName: name)
+        return d
+    }
+
+    @Test func 終わったあと腕を上げただけでは動き出さない() {
+        let h = SpyHaptics()
+        let r = Runner(haptics: h, notifier: SpyScheduler(), defaults: fresh(), now: t0)
+        r.activate(now: t0)
+        r.goIdle()
+        r.activate(now: t0 + 100)          // 腕を下ろしている間に終わり、上げた
+        #expect(r.engine.isFinished)
+        r.goIdle()
+        r.activate(now: t0 + 200)          // もう一度上げた
+        #expect(r.engine.isFinished)       // 勝手に走り出さない
+        #expect(h.log == ["start"])
+    }
+
+    @Test func 終わった画面のタップだけが動かす() {
+        let h = SpyHaptics()
+        let r = Runner(haptics: h, notifier: SpyScheduler(), defaults: fresh(), now: t0)
+        r.activate(now: t0)
+        r.startAgain(now: t0 + 10)         // 走っている最中 → 何も起きない
+        #expect(r.engine.remaining(at: t0 + 10) == 80)
+        r.goIdle(); r.activate(now: t0 + 100)
+        #expect(r.engine.isFinished)
+        r.startAgain(now: t0 + 110)        // 終わっている → 動く
+        #expect(!r.engine.isFinished)
+        #expect(r.engine.remaining(at: t0 + 110) == 90)
+        #expect(h.log == ["start", "start"])
+    }
+}

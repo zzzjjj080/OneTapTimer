@@ -160,7 +160,7 @@ public final class Runner {
         theme = ThemeHex.next(after: theme)
         defaults.set(theme, forKey: SharedStore.themeKey)
         haptics.stepped(up: true)
-        WidgetCenter.shared.reloadAllTimelines()
+        reloadComplication()
     }
 
     public func openSettings() {
@@ -175,6 +175,7 @@ public final class Runner {
     public func apply(duration new: Int, now: Date = .now) {
         duration = DurationRule.clamp(new)
         defaults.set(duration, forKey: Self.durationKey)
+        reloadComplication()
         screen = .run
         start(now: now)
     }
@@ -247,17 +248,23 @@ public final class Runner {
         // （**アプリを自分で閉じる API は watchOS に無い**ので、ここまでが限界）。
         keeper?.end()
         notifier.cancel()
-        cameFromOutside = true      // 次に開いたときは新しく始める
         updateGate()
         persist()
         return true
     }
 
-    /// 保存して、文字盤のコンプリケーションに描き直させる（設定した秒数と、走っているかを出している）
     private func persist() {
         if let data = try? JSONEncoder().encode(engine) {
             defaults.set(data, forKey: Self.engineKey)
         }
+    }
+
+    /// 文字盤のコンプリケーションを描き直させる。
+    ///
+    /// **設定が変わったときだけ。** コンプリケーションが出しているのは
+    /// 「設定してある秒数」と色の2つで、タイマーの進み具合では変わらない。
+    /// 開始・終了のたびに呼ぶと、WidgetKit の描き直しの持ち分を無駄に使う。
+    private func reloadComplication() {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
