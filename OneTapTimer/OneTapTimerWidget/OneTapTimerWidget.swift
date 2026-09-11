@@ -128,7 +128,7 @@ struct ComplicationView: View {
             }
         case .accessoryRectangular:
             HStack(spacing: 8) {
-                LevelGlyph(number: nil, liquid: entry.liquid).frame(width: 32, height: 32)
+                Mark(liquid: entry.liquid, size: 26).frame(width: 32, height: 32)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("ワンタップタイマー").font(.headline)
                     HStack(spacing: 3) {
@@ -139,12 +139,56 @@ struct ComplicationView: View {
                 Spacer(minLength: 0)
             }
         case .accessoryCorner:
-            LevelGlyph(number: nil, liquid: entry.liquid)
+            Mark(liquid: entry.liquid, size: 22)
+                .padding(2)
                 .widgetLabel { number.monospacedDigit() }
         default:
-            // 丸い枠：水の絵の上に秒数
-            LevelGlyph(number: AnyView(number), liquid: entry.liquid).padding(1)
+            // 丸い枠：上にストップウォッチ、下に秒数
+            Face(liquid: entry.liquid) { AnyView(number) }
         }
+    }
+}
+
+/// 丸い枠の中身。**上にマーク、下に数字。**
+///
+/// **`GeometryReader` を使わない。** コンプリケーションの枠は極端に小さく、
+/// 測らせると 0 や NaN が返ってきて描画ごと落ちることがある。寸法は決め打ちにする。
+struct Face: View {
+    let liquid: Color
+    let number: () -> AnyView
+    @Environment(\.widgetRenderingMode) private var mode
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .strokeBorder(mode == .fullColor ? liquid.opacity(0.7) : .white.opacity(0.5),
+                              lineWidth: 1.5)
+
+            VStack(spacing: -1) {
+                Mark(liquid: liquid, size: 13)
+                number()
+                    .font(.system(size: 15, weight: .heavy, design: .rounded))
+                    .monospacedDigit()
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
+                    .foregroundStyle(.white)
+            }
+            .padding(.horizontal, 3)
+        }
+    }
+}
+
+/// ストップウォッチのマーク。単色に着色される文字盤では、ここだけ色が乗るようにする。
+struct Mark: View {
+    let liquid: Color
+    let size: CGFloat
+    @Environment(\.widgetRenderingMode) private var mode
+
+    var body: some View {
+        Image(systemName: "timer")
+            .font(.system(size: size, weight: .semibold))
+            .foregroundStyle(mode == .fullColor ? liquid : .white)
+            .widgetAccentable()
     }
 }
 
@@ -155,57 +199,3 @@ enum Palette {
     static let rim = Color.white.opacity(0.55)
 }
 
-/// 下に水が溜まった丸。アプリの画面そのもの。
-///
-/// **`GeometryReader` を使わない。** コンプリケーションの枠は極端に小さく、
-/// 測らせると 0 や NaN が返ってきて描画ごと落ちることがある。`Shape` は矩形をそのまま受け取る。
-struct LevelGlyph: View {
-    /// 真ん中に載せる数字。`nil` なら絵だけ
-    let number: AnyView?
-    let liquid: Color
-    @Environment(\.widgetRenderingMode) private var mode
-
-    var body: some View {
-        ZStack {
-            if mode == .fullColor {
-                LevelShape(level: 0.42).fill(liquid)
-                RingShape().stroke(Palette.rim, lineWidth: 2)
-            } else {
-                // 単色に着色される文字盤では、水を強調色に。輪は薄く
-                LevelShape(level: 0.42).fill(.white.opacity(0.35)).widgetAccentable()
-                RingShape().stroke(.white.opacity(0.5), lineWidth: 2)
-            }
-            if let number {
-                number
-                    .font(.system(size: 19, weight: .heavy, design: .rounded))
-                    .monospacedDigit()
-                    .minimumScaleFactor(0.5)
-                    .lineLimit(1)
-                    .foregroundStyle(.white)
-                    .shadow(color: .black.opacity(0.35), radius: 1.5, y: 1)
-                    .padding(.horizontal, 5)
-            }
-        }
-    }
-}
-
-private struct RingShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        let side = min(rect.width, rect.height) - 2
-        guard side > 1 else { return Path() }
-        return Path(ellipseIn: CGRect(x: rect.midX - side / 2, y: rect.midY - side / 2, width: side, height: side))
-    }
-}
-
-/// 円の下 `level` ぶんだけ。
-private struct LevelShape: Shape {
-    let level: Double
-    func path(in rect: CGRect) -> Path {
-        let side = min(rect.width, rect.height) - 2
-        guard side > 1 else { return Path() }
-        let circle = CGRect(x: rect.midX - side / 2, y: rect.midY - side / 2, width: side, height: side)
-        let water = CGRect(x: circle.minX, y: circle.maxY - circle.height * level,
-                           width: circle.width, height: circle.height * level)
-        return Path(ellipseIn: circle).intersection(Path(water))
-    }
-}
