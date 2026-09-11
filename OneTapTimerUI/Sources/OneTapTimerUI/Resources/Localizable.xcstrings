@@ -1,28 +1,6 @@
 {
   "sourceLanguage": "ja",
   "strings": {
-    "のこり": {
-      "comment": "走っている間、数字の下",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "LEFT"
-          }
-        }
-      }
-    },
-    "秒": {
-      "comment": "1分を切って秒だけ出すときの単位／設定の値の単位",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "s"
-          }
-        }
-      }
-    },
     "分": {
       "comment": "設定の値の単位",
       "localizations": {
@@ -52,17 +30,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Change duration"
-          }
-        }
-      }
-    },
-    "キャンセル": {
-      "comment": "長押しで止めたあとの画面",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "CANCELLED"
           }
         }
       }
@@ -100,13 +67,13 @@
         }
       }
     },
-    "クラウンでキャンセル": {
-      "comment": "走っている画面の下端。クラウンを押すと止まって文字盤へ戻る",
+    "秒": {
+      "comment": "設定の値の単位",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Crown to cancel"
+            "value": "s"
           }
         }
       }

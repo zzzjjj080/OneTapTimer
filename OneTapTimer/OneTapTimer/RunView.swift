@@ -21,7 +21,7 @@ struct RunView: View {
                 // クラウンを左に設定していても画面ごと180度回るので、右端で合っている
                 .overlay(alignment: .topTrailing) {
                     if !runner.engine.isFinished {
-                        crownPointer
+                        crownHint
                     }
                 }
 
@@ -35,14 +35,18 @@ struct RunView: View {
         .ignoresSafeArea()
     }
 
-    /// クラウンの位置を指す矢印。クラウンは右側の、上から3割ほどのところにある。
-    private var crownPointer: some View {
-        Image(systemName: "arrowtriangle.right.fill")
-            .font(.system(size: 12, weight: .black))
-            .foregroundStyle(Color(hex: PaletteHex.ink).opacity(0.7))
-            .padding(.trailing, 1)
-            .padding(.top, WKInterfaceDevice.current().screenBounds.height * 0.26)
-            .accessibilityHidden(true)
+    /// 「キャンセル ▶」。**クラウンの高さに、画面の右端いっぱいまで寄せて置く。**
+    /// クラウンは右側の、上から3割ほどのところにある。矢印がその外側を指す。
+    private var crownHint: some View {
+        HStack(spacing: 2) {
+            Text("キャンセル")
+                .font(.system(size: 11, weight: .medium))
+            Image(systemName: "arrowtriangle.right.fill")
+                .font(.system(size: 9, weight: .black))
+        }
+        .foregroundStyle(Color(hex: PaletteHex.ink).opacity(0.7))
+        .padding(.top, WKInterfaceDevice.current().screenBounds.height * 0.26)
+        .accessibilityHidden(true)
     }
 
     /// 動いている間は 30fps で水位を動かす。常時表示では1秒ごとにして、
@@ -51,13 +55,11 @@ struct RunView: View {
     private var face: some View {
         if dim {
             TimelineView(.periodic(from: .now, by: 1)) { t in
-                DrainFace(engine: runner.engine, now: t.date, theme: runner.themeHex, metrics: .watch, liveDigits: false,
-                          runningHint: "クラウンでキャンセル")
+                DrainFace(engine: runner.engine, now: t.date, theme: runner.themeHex, metrics: .watch, liveDigits: false)
             }
         } else {
             TimelineView(.animation(minimumInterval: 1.0 / 30, paused: runner.engine.isFinished)) { t in
-                DrainFace(engine: runner.engine, now: t.date, theme: runner.themeHex, metrics: .watch, liveDigits: true,
-                          runningHint: "クラウンでキャンセル")
+                DrainFace(engine: runner.engine, now: t.date, theme: runner.themeHex, metrics: .watch, liveDigits: true)
             }
         }
     }

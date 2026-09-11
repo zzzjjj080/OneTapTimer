@@ -32,13 +32,11 @@ public struct DrainFace: View {
     public var theme: ThemeHex
     public var metrics: FaceMetrics
     public var liveDigits: Bool
-    /// 走っている間、画面の下端に出す案内。`nil` なら何も出さない
-    public var runningHint: LocalizedStringKey?
 
     public init(engine: TimerEngine, now: Date, theme: ThemeHex, metrics: FaceMetrics,
-                liveDigits: Bool = true, runningHint: LocalizedStringKey? = nil) {
+                liveDigits: Bool = true) {
         self.engine = engine; self.now = now; self.theme = theme; self.metrics = metrics
-        self.liveDigits = liveDigits; self.runningHint = runningHint
+        self.liveDigits = liveDigits
     }
 
     private var skin: Skin { Skin.of(engine, at: now, theme: theme) }
@@ -60,6 +58,8 @@ public struct DrainFace: View {
 
             Liquid(fraction: fraction, top: skin.liquidTop, bottom: skin.liquidBottom)
 
+            // **走っている間は数字だけ。** 「のこり」も「秒」も要らない。
+            // 何も添えないぶん、数字が画面のちょうど真ん中に来る
             VStack(spacing: metrics.gap) {
                 digits
                     .font(.system(size: secondsOnly ? metrics.digitsShort : metrics.digits,
@@ -72,11 +72,13 @@ public struct DrainFace: View {
                     .contentTransition(.numericText(countsDown: true))
                     .accessibilityIdentifier("digits")
 
-                Text(label, bundle: .module)
-                    .font(.system(size: metrics.label, weight: .medium))
-                    .tracking(1)
-                    .foregroundStyle(skin.inkDim)
-                    .accessibilityIdentifier("label")
+                if let label {
+                    Text(label, bundle: .module)
+                        .font(.system(size: metrics.label, weight: .medium))
+                        .tracking(1)
+                        .foregroundStyle(skin.inkDim)
+                        .accessibilityIdentifier("label")
+                }
             }
             .padding(.horizontal, 12)
 
@@ -107,14 +109,13 @@ public struct DrainFace: View {
         }
     }
 
-    private var label: LocalizedStringKey {
-        if engine.isCancelled { return "キャンセル" }
-        if engine.isFinished { return "おわり" }
-        return secondsOnly ? "秒" : "のこり"
+    /// 添える文字。**走っている間は出さない。** 終わったときだけ。
+    private var label: LocalizedStringKey? {
+        (engine.isFinished && !engine.isCancelled) ? "おわり" : nil
     }
 
     private var hint: LocalizedStringKey? {
-        engine.isFinished ? "タップで始める" : runningHint
+        (engine.isFinished && !engine.isCancelled) ? "タップで始める" : nil
     }
 }
 

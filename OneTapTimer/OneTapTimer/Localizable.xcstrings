@@ -1,5 +1,17 @@
 {
   "sourceLanguage": "ja",
-  "strings": {},
+  "strings": {
+    "キャンセル": {
+      "comment": "走っている画面。クラウンの高さに置く案内",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    }
+  },
   "version": "1.0"
 }
