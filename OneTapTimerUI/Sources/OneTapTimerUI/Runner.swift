@@ -35,10 +35,6 @@ public final class Runner {
     public private(set) var theme: Int
     public var themeHex: ThemeHex { ThemeHex.at(theme) }
 
-    /// 終わってからこの秒数のあいだに開き直したときは、始めずに「おわり」を見せる。
-    /// 腕を上げて終わりを確かめただけで、次の90秒が走り出さないように。
-    public static let doneGrace: TimeInterval = 30
-
     /// アプリの外から開いたか。**「開いたら始まる」はここでしか起きない。**
     /// 腕を下ろして上げただけ（`.inactive` → `.active`）で始まってしまうのを防ぐ。
     private var cameFromOutside = true
@@ -104,12 +100,11 @@ public final class Runner {
         updateGate()
 
         if opened {
-            if engine.isCancelled {
-                // やめたものを見せ直しても仕方がない。開いた ＝ 始めたい
+            // **外から開いたら必ず走り出す。** 終わったものもやめたものも、見せ直す意味がない。
+            // 腕を上げただけ（`.inactive` → `.active`）はここへ来ないので、勝手には始まらない
+            if engine.isFinished {
                 start(now: now)
-            } else if engine.isFinished, (engine.sinceFinished(at: now) ?? .infinity) > Self.doneGrace {
-                start(now: now)
-            } else if !engine.isFinished {
+            } else {
                 startTicking()
             }
         } else if !engine.isFinished {
@@ -246,9 +241,13 @@ public final class Runner {
         let events = engine.advance(to: .now)
         guard events.contains(.finished) else { return false }
         haptics.finished()
-        // 鳴らし終えたら前面に留まる必要は無い。留めたままだと電池を使い続ける
+        // **終わったら、クラウンを押したのと同じところまで片付ける。**
+        // 前面に留める必要も、予約しておいた通知も、もう要らない。
+        // 留めるのをやめると、watchOS がいつもどおり文字盤へ戻していく
+        // （**アプリを自分で閉じる API は watchOS に無い**ので、ここまでが限界）。
         keeper?.end()
         notifier.cancel()
+        cameFromOutside = true      // 次に開いたときは新しく始める
         updateGate()
         persist()
         return true

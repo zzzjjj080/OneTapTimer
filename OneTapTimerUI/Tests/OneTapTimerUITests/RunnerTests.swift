@@ -95,18 +95,18 @@ struct RunnerTests {
         #expect(h.log == ["start"])   // 通知が鳴らしているので、ここでは鳴らさない
     }
 
-    @Test func 終わってしばらく経って開いたら新しく始まる() {
+    @Test func 終わったあとに開き直したら新しく始まる() {
         let d = fresh()
         let r1 = Runner(haptics: SpyHaptics(), notifier: SpyScheduler(), defaults: d, now: t0)
         r1.activate(now: t0)
         r1.goIdle()
         let h = SpyHaptics(), s = SpyScheduler()
-        let r2 = Runner(haptics: h, notifier: s, defaults: d, now: t0 + 600)
-        r2.activate(now: t0 + 600)
+        let r2 = Runner(haptics: h, notifier: s, defaults: d, now: t0 + 100)
+        r2.activate(now: t0 + 100)
         #expect(!r2.engine.isFinished)
-        #expect(r2.engine.remaining(at: t0 + 600) == 90)
+        #expect(r2.engine.remaining(at: t0 + 100) == 90)
         #expect(h.log == ["start"])
-        #expect(s.scheduled == [t0 + 690])
+        #expect(s.scheduled == [t0 + 190])
     }
 
     @Test func 走っている最中のタップは何もしない() {
