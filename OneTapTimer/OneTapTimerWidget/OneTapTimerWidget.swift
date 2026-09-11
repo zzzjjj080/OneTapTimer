@@ -141,12 +141,13 @@ struct Face: View {
 
     var body: some View {
         ZStack {
+            // **細いと文字盤に埋もれる。** 実寸（直径42ptほど）で見て3ptにした
             Circle()
-                .strokeBorder(mode == .fullColor ? liquid.opacity(0.7) : .white.opacity(0.5),
-                              lineWidth: 1.5)
+                .strokeBorder(mode == .fullColor ? liquid.opacity(0.8) : .white.opacity(0.55),
+                              lineWidth: 3)
 
             VStack(spacing: -1) {
-                Mark(liquid: liquid, size: 13)
+                Mark(liquid: liquid, size: 12)
                 number
                     .font(.system(size: 15, weight: .heavy, design: .rounded))
                     .monospacedDigit()
@@ -154,7 +155,7 @@ struct Face: View {
                     .lineLimit(1)
                     .foregroundStyle(.white)
             }
-            .padding(.horizontal, 3)
+            .padding(.horizontal, 5)
         }
     }
 }

@@ -90,102 +90,46 @@ func strokeRing(_ ctx: CGContext, _ s: CGFloat, width: CGFloat, _ c: CGColor, in
     ctx.strokeEllipse(in: r)
 }
 
-// ───────── 案 ─────────
+// ───────── 枠の太さを見比べる ─────────
+//
+// accessoryCircular は直径 42pt ほど。線幅を pt で決めて、実寸（@2x = 84px）で見る。
 
 let NUMBER = "90"
 
-/// A 現行：水位 ＋ 細い輪 ＋ 数字
-func drawA(_ ctx: CGContext, _ s: CGFloat) {
+/// E 案。`ringPt` は 42pt の円に対する線幅（pt）。
+func drawE(_ ctx: CGContext, _ s: CGFloat, ringPt: CGFloat) {
     fillGround(ctx, s)
-    fillWater(ctx, s, level: 0.42)
-    strokeRing(ctx, s, width: s * 0.024, color(0xFFFFFF, 0.55))
-    drawText(ctx, NUMBER, size: s * 0.42, weight: .heavy, color: color(INK), center: CGPoint(x: s/2, y: s/2))
-}
-
-/// B 数字だけ：地をアプリの色にして、数字を最大に
-func drawB(_ ctx: CGContext, _ s: CGFloat) {
-    ctx.saveGState()
-    ctx.addEllipse(in: CGRect(x: 0, y: 0, width: s, height: s)); ctx.clip()
-    ctx.drawLinearGradient(gradient(LIQUID_TOP, LIQUID_BOTTOM),
-                           start: CGPoint(x: 0, y: s), end: CGPoint(x: 0, y: 0), options: [])
-    ctx.restoreGState()
-    drawText(ctx, NUMBER, size: s * 0.62, weight: .heavy, color: color(0x06222A), center: CGPoint(x: s/2, y: s/2))
-}
-
-/// C リング ＋ 数字：太い輪をアプリの色に。中は暗いまま
-func drawC(_ ctx: CGContext, _ s: CGFloat) {
-    fillGround(ctx, s)
-    strokeRing(ctx, s, width: s * 0.11, color(LIQUID_TOP))
-    drawText(ctx, NUMBER, size: s * 0.46, weight: .heavy, color: color(INK), center: CGPoint(x: s/2, y: s/2))
-}
-
-/// D 数字が主役：水位は下3割だけ、数字を大きく重ねる
-func drawD(_ ctx: CGContext, _ s: CGFloat) {
-    fillGround(ctx, s)
-    fillWater(ctx, s, level: 0.3, line: true)
-    drawText(ctx, NUMBER, size: s * 0.58, weight: .heavy, color: color(INK), center: CGPoint(x: s/2, y: s/2))
-}
-
-/// E マーク ＋ 数字：上にストップウォッチ、下に数字
-func drawE(_ ctx: CGContext, _ s: CGFloat) {
-    fillGround(ctx, s)
-    strokeRing(ctx, s, width: s * 0.024, color(LIQUID_TOP, 0.7))
+    let w = s * ringPt / 42
+    strokeRing(ctx, s, width: w, color(LIQUID_TOP, 0.8))
     // ストップウォッチの絵（円＋つまみ＋針）
-    let cx = s/2, cy = s * 0.66, r = s * 0.13
+    let cx = s/2, cy = s * 0.63, r = s * 0.12
     ctx.setStrokeColor(color(LIQUID_TOP)); ctx.setLineWidth(s * 0.035); ctx.setLineCap(.round)
     ctx.strokeEllipse(in: CGRect(x: cx - r, y: cy - r, width: r*2, height: r*2))
     ctx.beginPath(); ctx.move(to: CGPoint(x: cx, y: cy + r)); ctx.addLine(to: CGPoint(x: cx, y: cy + r + s*0.05)); ctx.strokePath()
     ctx.beginPath(); ctx.move(to: CGPoint(x: cx, y: cy)); ctx.addLine(to: CGPoint(x: cx + r*0.6, y: cy + r*0.5)); ctx.strokePath()
-    drawText(ctx, NUMBER, size: s * 0.34, weight: .heavy, color: color(INK), center: CGPoint(x: s/2, y: s * 0.27))
+    drawText(ctx, NUMBER, size: s * 0.36, weight: .heavy, color: color(INK), center: CGPoint(x: s/2, y: s * 0.29))
 }
 
-/// F 下にゲージ：数字を大きく、下端に短い横棒（残量に見える）
-func drawF(_ ctx: CGContext, _ s: CGFloat) {
-    fillGround(ctx, s)
-    strokeRing(ctx, s, width: s * 0.024, color(0xFFFFFF, 0.28))
-    drawText(ctx, NUMBER, size: s * 0.56, weight: .heavy, color: color(INK), center: CGPoint(x: s/2, y: s * 0.56))
-    let w = s * 0.44, h = s * 0.075, x = (s - w)/2, y = s * 0.17
-    ctx.setFillColor(color(0xFFFFFF, 0.22))
-    ctx.addPath(CGPath(roundedRect: CGRect(x: x, y: y, width: w, height: h), cornerWidth: h/2, cornerHeight: h/2, transform: nil))
-    ctx.fillPath()
-    ctx.setFillColor(color(LIQUID_TOP))
-    ctx.addPath(CGPath(roundedRect: CGRect(x: x, y: y, width: w * 0.62, height: h), cornerWidth: h/2, cornerHeight: h/2, transform: nil))
-    ctx.fillPath()
-}
+let widths: [CGFloat] = [1.5, 3, 4.5, 6]
 
-let designs: [(String, (CGContext, CGFloat) -> Void)] = [
-    ("A 現行 水位＋輪", drawA),
-    ("B 数字だけ", drawB),
-    ("C 太いリング", drawC),
-    ("D 数字主役＋水位", drawD),
-    ("E マーク＋数字", drawE),
-    ("F 数字＋ゲージ", drawF),
-]
-
-func image(_ draw: (CGContext, CGFloat) -> Void, _ s: CGFloat) -> CGImage {
+func image(_ s: CGFloat, ringPt: CGFloat) -> CGImage {
     let ctx = newContext(Int(s), Int(s))
-    draw(ctx, s)
+    drawE(ctx, s, ringPt: ringPt)
     return ctx.makeImage()!
 }
 
-// ───────── 並べる ─────────
-let cols = 3, rows = 2
-let cell: CGFloat = BIG + 60
-let sheetW = cell * CGFloat(cols) + 40
-let sheetH = cell * CGFloat(rows) + 60
+let cell: CGFloat = BIG + 40
+let sheetW = cell * CGFloat(widths.count) + 40
+let sheetH = cell + 60
 let sheet = newContext(Int(sheetW), Int(sheetH))
 sheet.setFillColor(color(0x101010)); sheet.fill(CGRect(x: 0, y: 0, width: sheetW, height: sheetH))
 
-for (i, d) in designs.enumerated() {
-    let col = i % cols, row = i / cols
-    let x = 20 + CGFloat(col) * cell
-    let y = sheetH - 40 - CGFloat(row + 1) * cell + 40
-    // 拡大したもの
-    sheet.draw(image(d.1, BIG), in: CGRect(x: x + (cell - BIG)/2 - 20, y: y + 44, width: BIG, height: BIG))
-    // 実寸
-    sheet.draw(image(d.1, ACC), in: CGRect(x: x + cell - 100, y: y + 44 + BIG - ACC, width: ACC, height: ACC))
-    drawText(sheet, d.0, size: 22, weight: .semibold, color: color(0xEDE7DC),
-             center: CGPoint(x: x + cell/2 - 20, y: y + 20))
+for (i, w) in widths.enumerated() {
+    let x = 20 + CGFloat(i) * cell
+    sheet.draw(image(BIG, ringPt: w), in: CGRect(x: x + (cell - BIG)/2, y: 60, width: BIG, height: BIG))
+    sheet.draw(image(ACC, ringPt: w), in: CGRect(x: x + cell - 96, y: 60 + BIG - ACC, width: ACC, height: ACC))
+    drawText(sheet, "線幅 \(w == 1.5 ? "1.5（前）" : "\(Int(w))")pt", size: 24, weight: .semibold,
+             color: color(0xEDE7DC), center: CGPoint(x: x + cell/2, y: 30))
 }
-savePNG(sheet.makeImage()!, "complication-ideas.png")
-print("書き出しました: complication-ideas.png")
+savePNG(sheet.makeImage()!, "complication-ring.png")
+print("書き出しました: complication-ring.png")
