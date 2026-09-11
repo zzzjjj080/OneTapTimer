@@ -28,11 +28,14 @@ struct PhoneRootView: View {
                 .presentationBackground(Color(hex: PaletteHex.ground))
         }
         .task {
-            UNUserNotificationCenter.current().delegate = runner.gate
-            // シミュレータで画面を撮るときは、許可ダイアログを出させない（合成タップが届かない。引き継ぎ書 4-24）
-            if !skipsPermissionForChecking { await runner.notifier.requestPermission() }
+            if !skipsPermissionForChecking {
+                UNUserNotificationCenter.current().delegate = runner.gate
+                await runner.notifier.requestPermission()
+            }
             #if DEBUG
+            // activate() より後に効かせる（先に入れても新しいタイマーで上書きされる）
             if let spec = ProcessInfo.processInfo.environment["OTT_STATE"] {
+                try? await Task.sleep(for: .milliseconds(400))
                 runner.applyDebugState(spec)
             }
             #endif

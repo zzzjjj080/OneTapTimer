@@ -10,7 +10,17 @@ import OneTapTimerUI
 /// 動きは `OneTapTimerUI` の `Runner` を Watch と共有している。
 @main
 struct OneTapTimerPhoneApp: App {
-    @State private var runner = Runner(haptics: PhoneHaptics())
+    @State private var runner = OneTapTimerPhoneApp.makeRunner()
+
+    /// 画面を撮るときは、通知に触らない作りへ差し替える。**リリース構成には入らない。**
+    private static func makeRunner() -> Runner {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["OTT_SKIP_PERMISSION"] == "1" {
+            return Runner(haptics: PhoneHaptics(), notifier: SilentNotifier())
+        }
+        #endif
+        return Runner(haptics: PhoneHaptics())
+    }
     @Environment(\.scenePhase) private var phase
 
     var body: some Scene {

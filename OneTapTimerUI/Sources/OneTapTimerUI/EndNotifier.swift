@@ -33,8 +33,14 @@ public final class EndNotifier: EndScheduling {
     }
 
     /// 終わる時刻に1回。前の登録は消す。
+    ///
+    /// **許可が下りていないなら、登録そのものをしない。**
+    /// watchOS は許可を聞いていない状態で `add` すると、そこで許可ダイアログを出す。
+    /// 画面を撮っている最中に出られると、以後どの画面も撮れなくなる（引き継ぎ書 4-107）。
+    /// 許可が無ければどのみち鳴らないので、黙って何もしないのが正しい。
     public func schedule(endAt: Date, duration: Int) {
         center.removePendingNotificationRequests(withIdentifiers: [id])
+        guard isAllowed else { return }
         let after = endAt.timeIntervalSinceNow
         guard after > 0.5 else { return }
 
@@ -71,4 +77,17 @@ public final class NotificationGate: NSObject, UNUserNotificationCenterDelegate,
 import OneTapTimerCore
 enum TimeTextBridge {
     static func brief(_ seconds: Int) -> String { TimeText.brief(seconds) }
+}
+
+
+/// 何もしない予約係。**画面を撮るときだけ差し替える。**
+///
+/// watchOS のシミュレータは、通知まわりのどこかに触れると許可ダイアログを出すことがある。
+/// 一度出ると、合成タップでは消せず（引き継ぎ書 4-24）、以後どの画面も撮れない。
+/// 撮影中は `UNUserNotificationCenter` に一切触らないのが確実。
+public final class SilentNotifier: EndScheduling {
+    public init() {}
+    public func requestPermission() async {}
+    public func schedule(endAt: Date, duration: Int) {}
+    public func cancel() {}
 }

@@ -14,11 +14,14 @@ struct RootView: View {
         }
         .animation(.easeInOut(duration: 0.22), value: runner.screen)
         .task {
-            // 前に出ている間は通知を出さない（自分で鳴らす）。裏では通知が鳴る
-            UNUserNotificationCenter.current().delegate = runner.gate
-            // シミュレータで画面を撮るときは、許可ダイアログを出させない（合成タップが届かない。引き継ぎ書 4-24）
-            if !skipsPermissionForChecking { await runner.notifier.requestPermission() }
-            applyDebugStateIfAsked()
+            // シミュレータで画面を撮るときは、通知まわりに一切触らない
+            // （許可ダイアログが出ると、合成タップでは消せない。引き継ぎ書 4-24 / 4-107）
+            if !skipsPermissionForChecking {
+                // 前に出ている間は通知を出さない（自分で鳴らす）。裏では通知が鳴る
+                UNUserNotificationCenter.current().delegate = runner.gate
+                await runner.notifier.requestPermission()
+            }
+            await applyDebugStateIfAsked()
         }
     }
 
@@ -33,11 +36,13 @@ struct RootView: View {
     /// シミュレータでの動作確認用の入口。**リリース構成には入らない。**
     ///
     ///     SIMCTL_CHILD_OTT_STATE="running:45" xcrun simctl launch <udid> com.zzzjjj080.OneTapTimer.watchkitapp
-    private func applyDebugStateIfAsked() {
+    /// **`activate()` より後に効かせる。** 画面が出るときの `scenePhase` の通知と
+    /// この `.task` はどちらが先か決まっておらず、先に入れても新しいタイマーで上書きされる。
+    private func applyDebugStateIfAsked() async {
         #if DEBUG
-        if let spec = ProcessInfo.processInfo.environment["OTT_STATE"] {
-            runner.applyDebugState(spec)
-        }
+        guard let spec = ProcessInfo.processInfo.environment["OTT_STATE"] else { return }
+        try? await Task.sleep(for: .milliseconds(400))
+        runner.applyDebugState(spec)
         #endif
     }
 }
