@@ -1,5 +1,6 @@
 import SwiftUI
 import WatchKit
+import OneTapTimerCore
 import OneTapTimerUI
 
 /// 走っている画面。**止めるのはクラウン**（押すと止まって文字盤へ戻る）。
@@ -16,6 +17,13 @@ struct RunView: View {
                 .contentShape(Rectangle())
                 .onTapGesture { runner.startAgain() }
                 .accessibilityIdentifier("face")
+                // 画面の外、右のここにクラウンがある。**文字だけでは、どこを押すのか分からない。**
+                // クラウンを左に設定していても画面ごと180度回るので、右端で合っている
+                .overlay(alignment: .topTrailing) {
+                    if !runner.engine.isFinished {
+                        crownPointer
+                    }
+                }
 
             // 上の中央。システムの時刻は右上に出るので、真ん中は空いている
             SettingButton(skin: Skin.of(runner.engine, at: .now, theme: runner.themeHex), size: 42) {
@@ -25,6 +33,16 @@ struct RunView: View {
         }
         // 安全領域を外すのはここ1か所だけ。内側で重ねて外すと、かえって狭くなる
         .ignoresSafeArea()
+    }
+
+    /// クラウンの位置を指す矢印。クラウンは右側の、上から3割ほどのところにある。
+    private var crownPointer: some View {
+        Image(systemName: "arrowtriangle.right.fill")
+            .font(.system(size: 12, weight: .black))
+            .foregroundStyle(Color(hex: PaletteHex.ink).opacity(0.7))
+            .padding(.trailing, 1)
+            .padding(.top, WKInterfaceDevice.current().screenBounds.height * 0.26)
+            .accessibilityHidden(true)
     }
 
     /// 動いている間は 30fps で水位を動かす。常時表示では1秒ごとにして、
