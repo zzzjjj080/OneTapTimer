@@ -41,10 +41,4 @@ final class PhoneHaptics: TimerHaptics {
         soft.impactOccurred(intensity: up ? 0.8 : 0.6)
         soft.prepare()
     }
-
-    func cancelled() {
-        running?.cancel()
-        notice.notificationOccurred(.warning)
-        notice.prepare()
-    }
 }

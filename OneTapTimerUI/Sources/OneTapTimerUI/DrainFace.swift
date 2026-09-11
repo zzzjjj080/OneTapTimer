@@ -32,15 +32,26 @@ public struct DrainFace: View {
     public var theme: ThemeHex
     public var metrics: FaceMetrics
     public var liveDigits: Bool
+    /// 走っている間、画面の下端に出す案内。`nil` なら何も出さない
+    public var runningHint: LocalizedStringKey?
 
-    public init(engine: TimerEngine, now: Date, theme: ThemeHex, metrics: FaceMetrics, liveDigits: Bool = true) {
-        self.engine = engine; self.now = now; self.theme = theme; self.metrics = metrics; self.liveDigits = liveDigits
+    public init(engine: TimerEngine, now: Date, theme: ThemeHex, metrics: FaceMetrics,
+                liveDigits: Bool = true, runningHint: LocalizedStringKey? = nil) {
+        self.engine = engine; self.now = now; self.theme = theme; self.metrics = metrics
+        self.liveDigits = liveDigits; self.runningHint = runningHint
     }
 
     private var skin: Skin { Skin.of(engine, at: now, theme: theme) }
-    /// 終わったら 0 で固定する。`now` が終了時刻のわずかに手前（描画の1コマ前）でも「1」と出さない
-    private var remaining: Double { engine.isFinished ? 0 : engine.remaining(at: now) }
-    private var fraction: Double { engine.isFinished ? 0 : engine.fraction(at: now) }
+    /// 終わったら 0 で固定する。`now` が終了時刻のわずかに手前（描画の1コマ前）でも「1」と出さない。
+    /// 止めたときは、次に始まる長さを出す
+    private var remaining: Double {
+        if engine.isCancelled { return Double(engine.duration) }
+        return engine.isFinished ? 0 : engine.remaining(at: now)
+    }
+    private var fraction: Double {
+        if engine.isCancelled { return 1 }
+        return engine.isFinished ? 0 : engine.fraction(at: now)
+    }
     private var secondsOnly: Bool { engine.isFinished || TimeText.showsSecondsOnly(remaining) }
 
     public var body: some View {
@@ -69,15 +80,17 @@ public struct DrainFace: View {
             }
             .padding(.horizontal, 12)
 
-            // 下端の案内。走っている間は「長押しでキャンセル」、終わったら「タップで始める」
-            VStack {
-                Spacer()
-                Text(hint, bundle: .module)
-                    .font(.system(size: metrics.hint, weight: .medium))
-                    .tracking(0.5)
-                    .foregroundStyle(skin.inkDim.opacity(0.85))
-                    .padding(.bottom, metrics.hintBottom)
-                    .accessibilityIdentifier("hint")
+            // 下端の案内
+            if let hint {
+                VStack {
+                    Spacer()
+                    Text(hint, bundle: .module)
+                        .font(.system(size: metrics.hint, weight: .medium))
+                        .tracking(0.5)
+                        .foregroundStyle(skin.inkDim.opacity(0.85))
+                        .padding(.bottom, metrics.hintBottom)
+                        .accessibilityIdentifier("hint")
+                }
             }
         }
         .animation(.easeInOut(duration: 0.35), value: skin)
@@ -85,10 +98,7 @@ public struct DrainFace: View {
 
     @ViewBuilder
     private var digits: some View {
-        if engine.isCancelled {
-            // 止めた。次にタップしたら始まる長さを見せる
-            Text(TimeText.display(Double(engine.duration)))
-        } else if liveDigits || engine.isFinished {
+        if engine.isCancelled || liveDigits || engine.isFinished {
             Text(TimeText.display(remaining))
         } else {
             // システムが描く。書式は `m:ss` 固定（1分を切っても `0:45`）。
@@ -103,8 +113,8 @@ public struct DrainFace: View {
         return secondsOnly ? "秒" : "のこり"
     }
 
-    private var hint: LocalizedStringKey {
-        engine.isFinished ? "タップで始める" : "長押しでキャンセル"
+    private var hint: LocalizedStringKey? {
+        engine.isFinished ? "タップで始める" : runningHint
     }
 }
 

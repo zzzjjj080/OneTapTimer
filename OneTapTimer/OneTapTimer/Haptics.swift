@@ -10,7 +10,8 @@ import OneTapTimerUI
 /// | 走り出した | `.start` |
 /// | 終わった | `.notification` ×3 → 間 → `.success`。**これで終わり。鳴り続けない** |
 /// | ＋ − | `.click`（`.stop` は二重に震えるので使わない。何十回も押す） |
-/// | 長押しで止めた | `.stop`（二重の震えが「止まった」の合図になる） |
+///
+/// **止めたときは鳴らさない。** 出ていく人を震わせても意味がない。
 @MainActor
 final class Haptics: TimerHaptics {
 
@@ -37,10 +38,5 @@ final class Haptics: TimerHaptics {
 
     func stepped(up: Bool) {
         WKInterfaceDevice.current().play(.click)
-    }
-
-    func cancelled() {
-        running?.cancel()
-        WKInterfaceDevice.current().play(.stop)
     }
 }

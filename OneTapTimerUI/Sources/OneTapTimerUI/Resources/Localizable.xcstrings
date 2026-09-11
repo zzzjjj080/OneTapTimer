@@ -67,17 +67,6 @@
         }
       }
     },
-    "長押しでキャンセル": {
-      "comment": "走っている画面の下端",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hold to cancel"
-          }
-        }
-      }
-    },
     "タップで始める": {
       "comment": "終わった画面の下端",
       "localizations": {
@@ -107,6 +96,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Done"
+          }
+        }
+      }
+    },
+    "クラウンでキャンセル": {
+      "comment": "走っている画面の下端。クラウンを押すと止まって文字盤へ戻る",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crown to cancel"
           }
         }
       }

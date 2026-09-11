@@ -13,7 +13,6 @@ struct PhoneRootView: View {
             .ignoresSafeArea()
             .contentShape(Rectangle())
             .onTapGesture { runner.startAgain() }
-            .onLongPressGesture(minimumDuration: 0.7) { runner.cancel() }
             .accessibilityIdentifier("face")
 
             SettingButton(skin: Skin.of(runner.engine, at: .now, theme: runner.themeHex), size: 56) {

@@ -12,8 +12,6 @@ public protocol TimerHaptics: AnyObject {
     func finished()
     /// ＋ − を1つ動かした
     func stepped(up: Bool)
-    /// 長押しで止めた
-    func cancelled()
 }
 
 /// 画面と ``TimerEngine`` をつなぐところ。Watch と iPhone で同じ。
@@ -134,6 +132,10 @@ public final class Runner {
     ///
     /// 裏で動かすことは考えていない。出たあとに通知だけ鳴るのが一番困るので、
     /// タイマーも予約した通知も、ここで一緒に片付ける。
+    ///
+    /// **止める操作はこれ1つ。** 画面の長押しでも止められるようにしていたが、
+    /// 長押しではアプリを閉じられない（watchOS に終了の API が無い）。
+    /// クラウンなら「止めて文字盤へ」が一動作で済むので、そちらへ寄せた。
     public func leave(now: Date = .now) {
         isActive = false
         cameFromOutside = true
@@ -145,6 +147,7 @@ public final class Runner {
             engine.cancel(at: now)
         }
         notifier.cancel()
+        updateGate()
         persist()
     }
 
@@ -163,18 +166,6 @@ public final class Runner {
         defaults.set(theme, forKey: SharedStore.themeKey)
         haptics.stepped(up: true)
         WidgetCenter.shared.reloadAllTimelines()
-    }
-
-    /// 画面を長押しした。**止める。** 開き直したら、待たずに新しく始まる
-    public func cancel(now: Date = .now) {
-        guard !engine.isFinished else { return }
-        engine.cancel(at: now)
-        stopTicking()
-        keeper?.end()
-        notifier.cancel()
-        updateGate()
-        haptics.cancelled()
-        persist()
     }
 
     public func openSettings() {

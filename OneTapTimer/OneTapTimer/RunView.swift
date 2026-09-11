@@ -2,7 +2,8 @@ import SwiftUI
 import WatchKit
 import OneTapTimerUI
 
-/// 走っている画面。**長押しでキャンセル。** 走っている最中のタップは何もしない（終わった画面ではタップで始める）。
+/// 走っている画面。**止めるのはクラウン**（押すと止まって文字盤へ戻る）。
+/// 走っている最中のタップは何もしない。終わった画面ではタップで始める。
 /// 上の中央に、時間を変える入口。
 struct RunView: View {
     @Environment(Runner.self) private var runner
@@ -14,7 +15,6 @@ struct RunView: View {
             face
                 .contentShape(Rectangle())
                 .onTapGesture { runner.startAgain() }
-                .onLongPressGesture(minimumDuration: 0.7) { runner.cancel() }
                 .accessibilityIdentifier("face")
 
             // 上の中央。システムの時刻は右上に出るので、真ん中は空いている
@@ -33,11 +33,13 @@ struct RunView: View {
     private var face: some View {
         if dim {
             TimelineView(.periodic(from: .now, by: 1)) { t in
-                DrainFace(engine: runner.engine, now: t.date, theme: runner.themeHex, metrics: .watch, liveDigits: false)
+                DrainFace(engine: runner.engine, now: t.date, theme: runner.themeHex, metrics: .watch, liveDigits: false,
+                          runningHint: "クラウンでキャンセル")
             }
         } else {
             TimelineView(.animation(minimumInterval: 1.0 / 30, paused: runner.engine.isFinished)) { t in
-                DrainFace(engine: runner.engine, now: t.date, theme: runner.themeHex, metrics: .watch, liveDigits: true)
+                DrainFace(engine: runner.engine, now: t.date, theme: runner.themeHex, metrics: .watch, liveDigits: true,
+                          runningHint: "クラウンでキャンセル")
             }
         }
     }

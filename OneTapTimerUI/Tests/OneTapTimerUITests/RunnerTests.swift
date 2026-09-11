@@ -9,7 +9,6 @@ final class SpyHaptics: TimerHaptics {
     func started() { log.append("start") }
     func finished() { log.append("finish") }
     func stepped(up: Bool) { log.append(up ? "up" : "down") }
-    func cancelled() { log.append("cancel") }
 }
 
 @MainActor
@@ -84,15 +83,6 @@ struct RunnerTests {
         #expect(h.log == ["start", "start"])
     }
 
-    @Test func 長押しでやめたあと腕を上げても始まらない() {
-        let r = Runner(haptics: SpyHaptics(), notifier: SpyScheduler(), defaults: fresh(), now: t0)
-        r.activate(now: t0)
-        r.cancel(now: t0 + 10)
-        r.goIdle()
-        r.activate(now: t0 + 60)
-        #expect(r.engine.isCancelled)   // 見ていただけ。始めない
-    }
-
     @Test func 腕を下ろしている間に終わったらおわりのまま() {
         let h = SpyHaptics()
         let r = Runner(haptics: h, notifier: SpyScheduler(), defaults: fresh(), now: t0)
@@ -132,7 +122,7 @@ struct RunnerTests {
         let h = SpyHaptics(), s = SpyScheduler(), d = fresh()
         let r = Runner(haptics: h, notifier: s, defaults: d, now: t0)
         r.activate(now: t0)
-        r.cancel(now: t0 + 5)
+        r.leave(now: t0 + 5)
         r.startAgain(now: t0 + 10)
         #expect(!r.engine.isFinished)
         #expect(r.engine.remaining(at: t0 + 10) == 90)
@@ -164,16 +154,6 @@ struct RunnerTests {
 
         let again = Runner(haptics: SpyHaptics(), notifier: SpyScheduler(), defaults: d, now: t0 + 9999)
         #expect(again.duration == 180)
-    }
-
-    @Test func 長押しで止めたら鳴らずに終わり扱い() {
-        let h = SpyHaptics(), s = SpyScheduler()
-        let r = Runner(haptics: h, notifier: s, defaults: fresh(), now: t0)
-        r.activate(now: t0)
-        r.cancel(now: t0 + 20)
-        #expect(r.engine.isCancelled)
-        #expect(s.cancels == 1)
-        #expect(h.log == ["start", "cancel"])
     }
 
     @Test func 設定を開いたまま出ていったら閉じる() {
@@ -209,15 +189,6 @@ struct RunnerTests {
         #expect(k.ends == 1)
         #expect(!k.isKeeping)
         #expect(!r.gate.isForeground)
-    }
-
-    @Test func 長押しでやめたら前面の確保もやめる() {
-        let r = Runner(haptics: SpyHaptics(), notifier: SpyScheduler(), defaults: fresh(), now: t0)
-        let k = SpyKeeper()
-        r.keeper = k
-        r.activate(now: t0)
-        r.cancel(now: t0 + 10)
-        #expect(k.ends == 1)
     }
 
     @Test func 範囲外の設定は丸められる() {

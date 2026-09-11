@@ -13,8 +13,10 @@ public struct Skin: Sendable, Equatable {
 
     public init(state: State, theme: ThemeHex) { self.state = state; self.theme = theme }
 
+    /// **止めたときは `.done` にしない。** クラウンで出ていく瞬間に画面が白く光ってしまう。
+    /// 止めた画面は「満タンで待っている」見た目にして、次に開いたときと地続きにする。
     public static func of(_ engine: TimerEngine, at now: Date, theme: ThemeHex) -> Skin {
-        if engine.isFinished { return Skin(state: .done, theme: theme) }
+        if engine.isFinished && !engine.isCancelled { return Skin(state: .done, theme: theme) }
         return Skin(state: engine.isFinalStretch(at: now) ? .finalStretch : .running, theme: theme)
     }
 
