@@ -27,11 +27,11 @@ final class PhoneHaptics: TimerHaptics {
     func finished() async {
         running?.cancel()
         let burst = Task { @MainActor in
-            for i in 0..<10 {
+            for i in 0..<30 {
                 guard !Task.isCancelled else { return }
                 heavy.impactOccurred(intensity: 1.0)
                 heavy.prepare()
-                if i < 9 { try? await Task.sleep(for: .milliseconds(80)) }
+                if i < 29 { try? await Task.sleep(for: .milliseconds(80)) }
             }
         }
         running = burst
