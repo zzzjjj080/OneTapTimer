@@ -16,6 +16,12 @@ public protocol ForegroundKeeping: AnyObject {
     /// **利用者が自分で出ていった**と、セッションの終わり方から分かったときに呼ぶ
     /// （クラウンを押した／ほかのアプリへ移った）。腕を下ろしただけでは呼ばない
     var onUserLeft: (() -> Void)? { get set }
+    /// 最後に起きたこと（動作確認用。画面に出して、留めが効いているかを実機で見る）
+    var lastEvent: String { get }
     func begin()
     func end()
+}
+
+public extension ForegroundKeeping {
+    var lastEvent: String { "" }
 }

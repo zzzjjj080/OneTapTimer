@@ -24,6 +24,7 @@ struct RunView: View {
                         crownHint
                     }
                 }
+                .overlay(alignment: .bottom) { debugStatus }
 
             // 上の中央。システムの時刻は右上に出るので、真ん中は空いている
             SettingButton(skin: Skin.of(runner.engine, at: .now, theme: runner.themeHex), size: 42) {
@@ -33,6 +34,25 @@ struct RunView: View {
         }
         // 安全領域を外すのはここ1か所だけ。内側で重ねて外すと、かえって狭くなる
         .ignoresSafeArea()
+    }
+
+    /// **動作確認用。** 前面を留めるセッションが効いているかを、実機の画面で見る。
+    /// Mac から Watch への接続が不安定で記録を吸い出せないので、画面に出して本人に読んでもらう。
+    /// **リリース構成には入らない。**
+    @ViewBuilder
+    private var debugStatus: some View {
+        #if DEBUG
+        TimelineView(.periodic(from: .now, by: 1)) { _ in
+            let keeping = runner.keeper?.isKeeping == true
+            Text((keeping ? "● 留め中  " : "○ 留めなし  ") + (runner.keeper?.lastEvent ?? "keeperなし"))
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(keeping ? Color.green : Color.red)
+                .lineLimit(3)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 14)
+                .padding(.bottom, 4)
+        }
+        #endif
     }
 
     /// 「キャンセル ▶」。**クラウンの高さに、画面の右端いっぱいまで寄せて置く。**

@@ -25,18 +25,43 @@ final class FrontKeeper: NSObject, ForegroundKeeping, WKExtendedRuntimeSessionDe
     var onUserLeft: (() -> Void)?
 
     private var session: WKExtendedRuntimeSession?
+    /// 留めていてほしい間は true。`end()` で下ろす。遅れて届く張り直しを止めるのに使う
+    private var wanted = false
+    private var attempts = 0
+    private(set) var lastEvent = "未開始"
 
     func begin() {
+        wanted = true
         // 終わったセッションを握ったままだと、二度と張れない。生きているときだけ何もしない
         if let s = session, s.state != .invalid { return }
+        attempts = 0
+        startSession()
+    }
+
+    /// 張る。**3秒たっても始まらなければ張り直す（3回まで）。**
+    /// 開いた直後は、SwiftUI が `.active` と言っていても watchOS 側がまだ前面と見ていないことがある
+    private func startSession() {
+        guard wanted else { return }
+        attempts += 1
         let s = WKExtendedRuntimeSession()
         s.delegate = self
         session = s
         s.start()
-        log("始める")
+        log("始める #\(attempts)")
+        let started = s
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(3))
+            guard let self, self.wanted, self.session === started, !self.isKeeping else { return }
+            self.log("3秒たっても始まらない state=\(started.state.rawValue) #\(self.attempts)")
+            guard self.attempts < 3 else { return }
+            started.invalidate()
+            self.session = nil
+            self.startSession()
+        }
     }
 
     func end() {
+        wanted = false
         // 走っていないセッションに invalidate を呼んでも害は無い
         session?.invalidate()
         session = nil
@@ -97,8 +122,10 @@ final class FrontKeeper: NSObject, ForegroundKeeping, WKExtendedRuntimeSessionDe
     }
 
     private func log(_ message: String) {
+        let stamp = Date.now.formatted(date: .omitted, time: .standard)
+        lastEvent = stamp + " " + message
         #if DEBUG
-        print("[FrontKeeper] \(message)")
+        print("[FrontKeeper] " + lastEvent)
         #endif
     }
 }
