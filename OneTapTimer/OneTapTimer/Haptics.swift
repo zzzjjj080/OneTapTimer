@@ -8,7 +8,7 @@ import OneTapTimerUI
 /// | 場面 | 触覚 |
 /// |---|---|
 /// | 走り出した | `.start` |
-/// | 終わった | `.notification` ×3 → 間 → `.success`。**これで終わり。鳴り続けない** |
+/// | 終わった | `.notification` を隙間なく ×9（約1秒）。**一続きの長い振動を一度だけ。鳴り続けない** |
 /// | ＋ − | `.click`（`.stop` は二重に震えるので使わない。何十回も押す） |
 ///
 /// **止めたときは鳴らさない。** 出ていく人を震わせても意味がない。
@@ -22,18 +22,32 @@ final class Haptics: TimerHaptics {
         WKInterfaceDevice.current().play(.start)
     }
 
-    func finished() {
+    /// 終わりの合図の回数。**ここを増やすと長くなる。**
+    private static let finishTaps = 9
+    /// 間隔。**空けすぎると別々の合図に、詰めすぎると取りこぼして短く感じる。**
+    /// 区切りタイマーで 110ms が「1発ずつ分かる」境目だった。それより少し詰めて、つながって聞こえるようにする
+    private static let finishGap = Duration.milliseconds(100)
+
+    /// 終わりの合図。**一続きの長く強い振動を、一度だけ。**
+    ///
+    /// 前は ×3 → 間 → `.success` だったが、途中の間で「2回鳴った」ように感じられた。
+    /// 間を無くして回数を増やし、1つの長い振動にまとめた。
+    ///
+    /// **鳴り終わるまで返らない。** 呼ぶ側はこれを待ってから前面を留めるのをやめる。
+    /// 先にやめると、腕を下ろしている間はアプリが止められて、途中から鳴らなくなる。
+    func finished() async {
         running?.cancel()
-        running = Task {
-            for i in 0..<3 {
+        let burst = Task {
+            for i in 0..<Self.finishTaps {
                 guard !Task.isCancelled else { return }
                 WKInterfaceDevice.current().play(.notification)
-                if i < 2 { try? await Task.sleep(for: .milliseconds(110)) }
+                if i < Self.finishTaps - 1 { try? await Task.sleep(for: Self.finishGap) }
             }
-            try? await Task.sleep(for: .milliseconds(220))
-            guard !Task.isCancelled else { return }
-            WKInterfaceDevice.current().play(.success)
+            // 最後の1発が鳴り終わるまで
+            try? await Task.sleep(for: .milliseconds(250))
         }
+        running = burst
+        await burst.value
     }
 
     func stepped(up: Bool) {

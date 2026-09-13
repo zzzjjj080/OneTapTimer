@@ -7,7 +7,7 @@ import OneTapTimerCore
 final class SpyHaptics: TimerHaptics {
     var log: [String] = []
     func started() { log.append("start") }
-    func finished() { log.append("finish") }
+    func finished() async { log.append("finish") }
     func stepped(up: Bool) { log.append(up ? "up" : "down") }
 }
 

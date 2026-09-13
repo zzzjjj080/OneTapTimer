@@ -8,8 +8,8 @@ import OneTapTimerCore
 public protocol TimerHaptics: AnyObject {
     /// 走り出した
     func started()
-    /// 終わった。**一度だけ。鳴り続けない**
-    func finished()
+    /// 終わった。**一度だけ。鳴り続けない。** 鳴り終わるまで返らない
+    func finished() async
     /// ＋ − を1つ動かした
     func stepped(up: Bool)
 }
@@ -241,15 +241,24 @@ public final class Runner {
     private func tick() -> Bool {
         let events = engine.advance(to: .now)
         guard events.contains(.finished) else { return false }
-        haptics.finished()
         // **終わったら、クラウンを押したのと同じところまで片付ける。**
-        // 前面に留める必要も、予約しておいた通知も、もう要らない。
-        // 留めるのをやめると、watchOS がいつもどおり文字盤へ戻していく
-        // （**アプリを自分で閉じる API は watchOS に無い**ので、ここまでが限界）。
-        keeper?.end()
+        // 予約しておいた通知は、もう要らないのですぐ消す。
         notifier.cancel()
-        updateGate()
         persist()
+
+        // 前面に留めるのをやめるのは、**鳴り終わってから。**
+        // 先にやめると、腕を下ろしている間はアプリが止められ、長い振動が途中で切れる。
+        // やめると watchOS がいつもどおり文字盤へ戻していく
+        // （**アプリを自分で閉じる API は watchOS に無い**ので、ここまでが限界）。
+        let finishedRun = engine.endAt
+        Task { [weak self] in
+            guard let self else { return }
+            await self.haptics.finished()
+            // 鳴っている間に「おわり」をタップして次が始まっていたら、そちらの留めを切らない
+            guard self.engine.isFinished, self.engine.endAt == finishedRun else { return }
+            self.keeper?.end()
+            self.updateGate()
+        }
         return true
     }
 

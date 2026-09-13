@@ -22,19 +22,20 @@ final class PhoneHaptics: TimerHaptics {
         heavy.prepare()
     }
 
-    func finished() {
+    /// 終わりの合図。**一続きの長く強い振動を、一度だけ**（Watch と揃える）。
+    /// 鳴り終わるまで返らない。
+    func finished() async {
         running?.cancel()
-        running = Task { @MainActor in
-            notice.notificationOccurred(.success)
-            notice.prepare()
-            try? await Task.sleep(for: .milliseconds(260))
-            for _ in 0..<2 {
+        let burst = Task { @MainActor in
+            for i in 0..<10 {
                 guard !Task.isCancelled else { return }
                 heavy.impactOccurred(intensity: 1.0)
                 heavy.prepare()
-                try? await Task.sleep(for: .milliseconds(150))
+                if i < 9 { try? await Task.sleep(for: .milliseconds(80)) }
             }
         }
+        running = burst
+        await burst.value
     }
 
     func stepped(up: Bool) {
