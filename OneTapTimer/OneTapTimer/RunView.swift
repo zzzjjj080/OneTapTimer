@@ -69,7 +69,7 @@ struct RunView: View {
         .accessibilityHidden(true)
     }
 
-    /// 動いている間は 30fps で水位を動かす。常時表示では1秒ごとにして、
+    /// 動いている間は毎秒2回、常時表示では1秒ごとに描き直す。常時表示では
     /// 数字はシステムに描かせる（アプリのコードが止まっても進む）。
     @ViewBuilder
     private var face: some View {
@@ -78,7 +78,11 @@ struct RunView: View {
                 DrainFace(engine: runner.engine, now: t.date, theme: runner.themeHex, metrics: .watch, liveDigits: false)
             }
         } else {
-            TimelineView(.animation(minimumInterval: 1.0 / 30, paused: runner.engine.isFinished)) { t in
+            // **毎秒2回だけ描き直す。** 30fps で描いていたら、前面を留めるセッションが
+            // 30秒ほどで打ち切られた疑いが強い（Apple「Using extended runtime sessions」：
+            // CPU を使い続けるとシステムがセッションを取り消すことがある）。
+            // 90秒で水位が動くのは1秒に1%ほどなので、2回で見た目は変わらない
+            TimelineView(.periodic(from: .now, by: 0.5)) { t in
                 DrainFace(engine: runner.engine, now: t.date, theme: runner.themeHex, metrics: .watch, liveDigits: true)
             }
         }

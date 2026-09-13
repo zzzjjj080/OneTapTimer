@@ -68,7 +68,8 @@ public struct DrainFace: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
                     .foregroundStyle(skin.ink)
-                    .shadow(color: .black.opacity(skin.isDone ? 0 : 0.25), radius: 10, y: 2)
+                    // 影は小さく。ぼかしの大きい影は描き直すたびに重い（大きな数字だとなおさら）
+                    .shadow(color: .black.opacity(skin.isDone ? 0 : 0.22), radius: 2, y: 1)
                     .contentTransition(.numericText(countsDown: true))
                     .accessibilityIdentifier("digits")
 
