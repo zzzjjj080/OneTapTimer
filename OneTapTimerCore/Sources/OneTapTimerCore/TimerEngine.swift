@@ -10,7 +10,8 @@ public enum TimerEvent: Equatable, Sendable {
 /// `Timer` で1秒ずつ引かない。経過は常に「終わる時刻 − 今」で出す。
 /// 画面が消えても、アプリが止められても、次に時刻を渡した瞬間に正しい値へ追いつく。
 ///
-/// 一時停止は無い。押したら最初から、終わったらそのまま。それがこのアプリの全部。
+/// **一時停止できる**（2026-09-13 に足した。あまり使わないので、画面の左上に小さく置く）。
+/// 止めている間は残り秒をそのまま持ち、続けるときに「今 ＋ 残り」を新しい終わる時刻にする。
 public struct TimerEngine: Equatable, Sendable, Codable {
 
     /// 残りがこの秒数を切ったら「終わりが近い」色にする。
@@ -24,6 +25,10 @@ public struct TimerEngine: Equatable, Sendable, Codable {
     public private(set) var finishedAt: Date?
     /// 長押しで止めた（時間が来て終わったのではない）
     public private(set) var isCancelled: Bool = false
+    /// 一時停止中の残り秒。止めていなければ nil
+    public private(set) var pausedRemaining: Double?
+
+    public var isPaused: Bool { pausedRemaining != nil }
 
     public init(duration: Int, startedAt: Date) {
         self.duration = DurationRule.clamp(duration)
@@ -41,9 +46,23 @@ public struct TimerEngine: Equatable, Sendable, Codable {
     }
     public var startAt: Date { endAt.addingTimeInterval(-TimeInterval(duration)) }
 
-    /// 残り秒。0未満にはならない。
+    /// 一時停止。**残り秒を持って止まる。** 終わっていたら、終わる時刻を過ぎていたら何もしない
+    public mutating func pause(at now: Date) {
+        guard !isFinished, !isPaused, endAt > now else { return }
+        pausedRemaining = endAt.timeIntervalSince(now)
+    }
+
+    /// 続ける。**今から残り秒ぶん先を、新しい終わる時刻にする**
+    public mutating func resume(at now: Date) {
+        guard !isFinished, let r = pausedRemaining else { return }
+        endAt = now.addingTimeInterval(r)
+        pausedRemaining = nil
+    }
+
+    /// 残り秒。0未満にはならない。止めている間は止めたときの値のまま。
     public func remaining(at now: Date) -> Double {
-        max(0, endAt.timeIntervalSince(now))
+        if let r = pausedRemaining { return r }
+        return max(0, endAt.timeIntervalSince(now))
     }
 
     /// 残りの割合。1 → 0。水位に使う。
@@ -64,7 +83,7 @@ public struct TimerEngine: Equatable, Sendable, Codable {
     /// 裏で止まっていて10分後に追いついた場合も、「10分前に終わった」が残る。
     /// 起動時に「終わってから間もないか」を見て、自動で次を始めるかを決めるため。
     public mutating func advance(to now: Date) -> [TimerEvent] {
-        guard !isFinished, now >= endAt else { return [] }
+        guard !isFinished, !isPaused, now >= endAt else { return [] }
         finishedAt = endAt
         return [.finished]
     }
@@ -74,8 +93,8 @@ public struct TimerEngine: Equatable, Sendable, Codable {
         self = TimerEngine(duration: duration, startedAt: now)
     }
 
-    // 保存済みの JSON に `isCancelled` が無くても読めるように
-    private enum CodingKeys: String, CodingKey { case duration, endAt, finishedAt, isCancelled }
+    // 保存済みの JSON に `isCancelled` や `pausedRemaining` が無くても読めるように
+    private enum CodingKeys: String, CodingKey { case duration, endAt, finishedAt, isCancelled, pausedRemaining }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -83,6 +102,7 @@ public struct TimerEngine: Equatable, Sendable, Codable {
         endAt = try c.decode(Date.self, forKey: .endAt)
         finishedAt = try c.decodeIfPresent(Date.self, forKey: .finishedAt)
         isCancelled = try c.decodeIfPresent(Bool.self, forKey: .isCancelled) ?? false
+        pausedRemaining = try c.decodeIfPresent(Double.self, forKey: .pausedRemaining)
     }
 
     /// 終わってからの経過。終わっていなければ nil。

@@ -5,7 +5,7 @@ import OneTapTimerUI
 
 /// 走っている画面。**止めるのはクラウン**（押すと止まって文字盤へ戻る）。
 /// 走っている最中のタップは何もしない。終わった画面ではタップで始める。
-/// 上の中央に、時間を変える入口。
+/// 上の中央に、時間を変える入口。左上に一時停止。
 struct RunView: View {
     @Environment(Runner.self) private var runner
     /// 常時表示（腕を下ろして暗くなった状態）
@@ -30,6 +30,17 @@ struct RunView: View {
                 runner.openSettings()
             }
             .padding(.top, 6)
+
+            // 左上。**一時停止**（あまり使わないので小さく隅に）。角の丸みに掛からないよう少し内側へ
+            if !runner.engine.isFinished {
+                PauseButton(skin: Skin.of(runner.engine, at: .now, theme: runner.themeHex),
+                            isPaused: runner.engine.isPaused, size: 36) {
+                    runner.togglePause()
+                }
+                .padding(.leading, 18)
+                .padding(.top, 9)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
         // 安全領域を外すのはここ1か所だけ。内側で重ねて外すと、かえって狭くなる
         .ignoresSafeArea()

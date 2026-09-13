@@ -7,7 +7,7 @@ struct PhoneRootView: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            TimelineView(.animation(minimumInterval: 1.0 / 30, paused: runner.engine.isFinished)) { t in
+            TimelineView(.animation(minimumInterval: 1.0 / 30, paused: runner.engine.isFinished || runner.engine.isPaused)) { t in
                 DrainFace(engine: runner.engine, now: t.date, theme: runner.themeHex, metrics: .phone)
             }
             .ignoresSafeArea()
@@ -19,6 +19,16 @@ struct PhoneRootView: View {
                 runner.openSettings()
             }
             .padding(.top, 8)
+
+            if !runner.engine.isFinished {
+                PauseButton(skin: Skin.of(runner.engine, at: .now, theme: runner.themeHex),
+                            isPaused: runner.engine.isPaused, size: 52) {
+                    runner.togglePause()
+                }
+                .padding(.leading, 20)
+                .padding(.top, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
         .sheet(isPresented: Binding(get: { runner.screen == .settings },
                                     set: { if !$0 { runner.closeSettings() } })) {

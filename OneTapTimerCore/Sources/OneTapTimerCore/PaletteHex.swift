@@ -22,6 +22,10 @@ public enum PaletteHex {
     public static let doneInk: UInt32 = 0x0D3A3B
     public static let doneInkDim: UInt32 = 0x3F6D6C
 
+    // 一時停止中：水が灰色になる。**色が抜けると「止まっている」と一目で分かる**
+    public static let pausedTop: UInt32 = 0x8A9097
+    public static let pausedBottom: UInt32 = 0x565D64
+
     // 設定画面の押せるもの
     public static let well: UInt32 = 0x122A2C
     public static let accent: UInt32 = 0x2BC2B7

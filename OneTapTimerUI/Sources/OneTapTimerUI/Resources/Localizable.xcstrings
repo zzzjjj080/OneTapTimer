@@ -77,6 +77,39 @@
           }
         }
       }
+    },
+    "一時停止中": {
+      "comment": "止めている間、数字の下",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PAUSED"
+          }
+        }
+      }
+    },
+    "一時停止": {
+      "comment": "左上のボタンの読み上げ",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause"
+          }
+        }
+      }
+    },
+    "再開": {
+      "comment": "左上のボタンの読み上げ（止めている間）",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

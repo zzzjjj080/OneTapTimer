@@ -9,8 +9,8 @@ struct PhoneSettingsSheet: View {
 
     var body: some View {
         VStack(spacing: 24) {
-            DurationEditor(value: $draft, buttonSize: CGSize(width: 150, height: 64), spacing: 14,
-                           valueSize: 72,
+            DurationEditor(value: $draft, theme: runner.themeHex, buttonSize: CGSize(width: 150, height: 64), spacing: 14,
+                           valueSize: 110,
                            onStep: { runner.stepped(up: $0) })
 
             Spacer(minLength: 0)

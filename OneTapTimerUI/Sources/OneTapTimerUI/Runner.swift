@@ -197,6 +197,28 @@ public final class Runner {
         start(now: now)
     }
 
+    /// 左上のボタン。**止める／続ける。** 終わっているときは何もしない。
+    ///
+    /// 止めている間に終わりの通知が鳴らないよう、予約は消す。続けるときに新しい終わる時刻で付け直す。
+    /// 前面の留めは外さない（止めた画面を見ていられるように。上限は self-care の10分）。
+    public func togglePause(now: Date = .now) {
+        guard !engine.isFinished else { return }
+        if engine.isPaused {
+            engine.resume(at: now)
+            notifier.schedule(endAt: engine.endAt, duration: engine.duration)
+            haptics.stepped(up: true)
+            if keeper?.isKeeping == false { keeper?.begin() }
+            startTicking()
+        } else {
+            engine.pause(at: now)
+            guard engine.isPaused else { return }
+            notifier.cancel()
+            stopTicking()
+            haptics.stepped(up: false)
+        }
+        persist()
+    }
+
     /// 色の組を次へ（10 の次は 1）。保存して、文字盤にも反映させる
     public func cycleTheme() {
         theme = ThemeHex.next(after: theme)
@@ -261,7 +283,8 @@ public final class Runner {
     /// 18000回起きることになり、前面に留まっている間ずっと電池を使う。
     private func startTicking() {
         stopTicking()
-        guard !engine.isFinished else { return }
+        // 止めている間は終わりを待たない（続けたときに ``togglePause(now:)`` が動かし直す）
+        guard !engine.isFinished, !engine.isPaused else { return }
         ticker = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { return }
@@ -327,6 +350,7 @@ public final class Runner {
     ///     OTT_STATE=running:45   残り45秒で走っている
     ///     OTT_STATE=last:7       終わりが近い
     ///     OTT_STATE=done         終わった直後
+    ///     OTT_STATE=paused:62    残り62秒で一時停止中
     ///     OTT_STATE=cancelled    長押しで止めた直後
     ///     OTT_STATE=settings     設定を開いた
     public func applyDebugState(_ spec: String, now: Date = .now) {
@@ -340,6 +364,11 @@ public final class Runner {
         case "done":
             engine = TimerEngine(duration: duration, startedAt: now.addingTimeInterval(-Double(duration)))
             _ = engine.advance(to: now)
+            notifier.cancel()
+            stopTicking()
+        case "paused":
+            engine = TimerEngine(duration: duration, startedAt: now.addingTimeInterval(-(Double(duration) - n)))
+            engine.pause(at: now)
             notifier.cancel()
             stopTicking()
         case "cancelled":

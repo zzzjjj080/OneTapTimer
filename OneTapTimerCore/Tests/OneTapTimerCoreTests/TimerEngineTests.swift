@@ -96,4 +96,60 @@ struct TimerEngineTests {
         #expect(back == e)
         #expect(back.isFinished)
     }
+
+    // MARK: - 一時停止
+
+    @Test func 一時停止すると残りが止まり終わらない() {
+        var e = TimerEngine(duration: 90, startedAt: t0)
+        e.pause(at: t0 + 30)
+        #expect(e.isPaused)
+        #expect(e.remaining(at: t0 + 30) == 60)
+        #expect(e.remaining(at: t0 + 500) == 60)
+        #expect(abs(e.fraction(at: t0 + 500) - 60.0 / 90.0) < 1e-9)
+        #expect(e.advance(to: t0 + 500).isEmpty)
+    }
+
+    @Test func 続けると止めたところから() {
+        var e = TimerEngine(duration: 90, startedAt: t0)
+        e.pause(at: t0 + 30)
+        e.resume(at: t0 + 100)
+        #expect(!e.isPaused)
+        #expect(e.remaining(at: t0 + 100) == 60)
+        #expect(e.endAt == t0 + 160)
+        #expect(e.advance(to: t0 + 159).isEmpty)
+        #expect(e.advance(to: t0 + 160) == [.finished])
+    }
+
+    @Test func 終わってからは止められない() {
+        var e = TimerEngine(duration: 10, startedAt: t0)
+        _ = e.advance(to: t0 + 10)
+        e.pause(at: t0 + 11)
+        #expect(!e.isPaused)
+        var f = TimerEngine(duration: 10, startedAt: t0)
+        f.pause(at: t0 + 10)                   // ちょうど終わる時刻。止めない
+        #expect(!f.isPaused)
+    }
+
+    @Test func 止めている間でも取り消せる() {
+        var e = TimerEngine(duration: 90, startedAt: t0)
+        e.pause(at: t0 + 30)
+        e.cancel(at: t0 + 40)
+        #expect(e.isFinished)
+        #expect(e.isCancelled)
+    }
+
+    @Test func 止めている間の終わりが近い色は残りで決まる() {
+        var e = TimerEngine(duration: 90, startedAt: t0)
+        e.pause(at: t0 + 85)
+        #expect(e.isFinalStretch(at: t0 + 1000))
+    }
+
+    @Test func 止めた状態を保存して戻せる() throws {
+        var e = TimerEngine(duration: 90, startedAt: t0)
+        e.pause(at: t0 + 30)
+        let back = try JSONDecoder().decode(TimerEngine.self, from: JSONEncoder().encode(e))
+        #expect(back == e)
+        #expect(back.isPaused)
+        #expect(back.remaining(at: t0 + 999) == 60)
+    }
 }

@@ -313,3 +313,70 @@ struct BackgroundTests {
         #expect(sch.cancels == 1)
     }
 }
+
+@MainActor
+struct PauseTests {
+    let t0 = Date(timeIntervalSince1970: 6_000_000)
+
+    private func fresh() -> UserDefaults {
+        let name = "test-\(UUID().uuidString)"
+        let d = UserDefaults(suiteName: name)!
+        d.removePersistentDomain(forName: name)
+        return d
+    }
+
+    @Test func 止めると通知を消し続けると付け直す() {
+        let s = SpyScheduler()
+        let r = Runner(haptics: SpyHaptics(), notifier: s, defaults: fresh(), now: t0)
+        r.activate(now: t0)
+        #expect(s.scheduled.last == t0 + 90)
+        r.togglePause(now: t0 + 30)
+        #expect(r.engine.isPaused)
+        #expect(s.cancels == 1)
+        r.togglePause(now: t0 + 100)
+        #expect(!r.engine.isPaused)
+        #expect(s.scheduled.last == t0 + 160)   // 続けたときの新しい終わる時刻
+    }
+
+    @Test func 止めている間は腕を上げても動き出さない() {
+        let h = SpyHaptics()
+        let r = Runner(haptics: h, notifier: SpyScheduler(), defaults: fresh(), now: t0)
+        r.activate(now: t0)
+        r.togglePause(now: t0 + 30)
+        r.goIdle(now: t0 + 31)
+        r.activate(now: t0 + 200)
+        #expect(r.engine.isPaused)
+        #expect(r.engine.remaining(at: t0 + 200) == 60)
+    }
+
+    @Test func 止めたまま開き直しても止まったまま() {
+        let d = fresh()
+        let r1 = Runner(haptics: SpyHaptics(), notifier: SpyScheduler(), defaults: d, now: t0)
+        r1.activate(now: t0)
+        r1.togglePause(now: t0 + 30)
+        let h = SpyHaptics()
+        let r2 = Runner(haptics: h, notifier: SpyScheduler(), defaults: d, now: t0 + 300)
+        r2.activate(now: t0 + 300)
+        #expect(r2.engine.isPaused)
+        #expect(r2.engine.remaining(at: t0 + 300) == 60)
+        #expect(h.log.isEmpty)                   // 新しく始めていない
+    }
+
+    @Test func 止めている間にクラウンで出たら取り消す() {
+        let r = Runner(haptics: SpyHaptics(), notifier: SpyScheduler(), defaults: fresh(), now: t0)
+        r.activate(now: t0)
+        r.togglePause(now: t0 + 30)
+        r.leave(now: t0 + 40)
+        #expect(r.engine.isCancelled)
+    }
+
+    @Test func 終わっているときは何もしない() {
+        let r = Runner(haptics: SpyHaptics(), notifier: SpyScheduler(), defaults: fresh(), now: t0)
+        r.activate(now: t0)
+        r.goIdle(now: t0 + 1)
+        r.activate(now: t0 + 100)                // 腕を下ろしている間に終わった
+        #expect(r.engine.isFinished)
+        r.togglePause(now: t0 + 101)
+        #expect(!r.engine.isPaused)
+    }
+}

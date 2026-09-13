@@ -9,17 +9,22 @@ import OneTapTimerCore
 /// 単位は `s` に統一した（`10s` `60s` で通じるし、分と秒が混ざらない）。
 /// 決定のボタンは外側（Watch もシートも「完了」）が持つ。
 /// Digital Crown も外側で付ける（`value` を書き換えればここは追従する）。
+///
+/// **ボタンに色を付ける**（2026-09-13）。＋ は色の組の明るいほうに黒い文字、
+/// − は濃いほうに白い文字。どちらも色の組の読みやすさのテストを通っている組み合わせ。
 public struct DurationEditor: View {
     @Binding public var value: Int
+    public var theme: ThemeHex
     /// ボタン1つぶんの大きさ。4つとも同じ
     public var buttonSize: CGSize
     public var spacing: CGFloat
     public var valueSize: CGFloat
     public var onStep: (Bool) -> Void
 
-    public init(value: Binding<Int>, buttonSize: CGSize, spacing: CGFloat, valueSize: CGFloat,
+    public init(value: Binding<Int>, theme: ThemeHex, buttonSize: CGSize, spacing: CGFloat, valueSize: CGFloat,
                 onStep: @escaping (Bool) -> Void) {
         _value = value
+        self.theme = theme
         self.buttonSize = buttonSize; self.spacing = spacing; self.valueSize = valueSize
         self.onStep = onStep
     }
@@ -27,26 +32,31 @@ public struct DurationEditor: View {
     public var body: some View {
         VStack(spacing: spacing) {
             HStack(spacing: spacing) {
-                StepButton(title: "−60", unit: "s", size: buttonSize) { change(by: -DurationRule.coarseStep) }
+                StepButton(title: "−60", unit: "s", size: buttonSize, fill: minusFill, text: minusText) { change(by: -DurationRule.coarseStep) }
                     .accessibilityIdentifier("minus60")
-                StepButton(title: "+60", unit: "s", size: buttonSize) { change(by: DurationRule.coarseStep) }
+                StepButton(title: "+60", unit: "s", size: buttonSize, fill: plusFill, text: plusText) { change(by: DurationRule.coarseStep) }
                     .accessibilityIdentifier("plus60")
             }
 
             valueText
-                .padding(.vertical, spacing * 0.25)
                 .accessibilityIdentifier("value")
 
             HStack(spacing: spacing) {
-                StepButton(title: "−10", unit: "s", size: buttonSize) { change(by: -DurationRule.fineStep) }
+                StepButton(title: "−10", unit: "s", size: buttonSize, fill: minusFill, text: minusText) { change(by: -DurationRule.fineStep) }
                     .accessibilityIdentifier("minus10")
-                StepButton(title: "+10", unit: "s", size: buttonSize) { change(by: DurationRule.fineStep) }
+                StepButton(title: "+10", unit: "s", size: buttonSize, fill: plusFill, text: plusText) { change(by: DurationRule.fineStep) }
                     .accessibilityIdentifier("plus10")
             }
         }
     }
 
+    private var plusFill: Color { Color(hex: theme.liquidTop) }
+    private var plusText: Color { Color(hex: PaletteHex.ground) }
+    private var minusFill: Color { Color(hex: theme.liquidBottom) }
+    private var minusText: Color { Color(hex: PaletteHex.ink) }
+
     /// **大きく秒（`90`）、その下に小さく `1:30`。** 走っている画面と同じ並び。
+    /// 数字の行は字の高さぶんに詰める（数字には下に伸びる部分が無い）。そのぶん字を大きくできる
     private var valueText: some View {
         VStack(spacing: 0) {
             Text("\(value)")
@@ -56,10 +66,11 @@ public struct DurationEditor: View {
                 .minimumScaleFactor(0.6)
                 .foregroundStyle(Color(hex: PaletteHex.ink))
                 .contentTransition(.numericText())
+                .frame(height: valueSize * 0.92)
             Text(TimeText.clock(Double(value)))
-                .font(.system(size: valueSize * 0.36, weight: .semibold, design: .rounded))
+                .font(.system(size: valueSize * 0.3, weight: .semibold, design: .rounded))
                 .monospacedDigit()
-                .foregroundStyle(Color(hex: PaletteHex.ink).opacity(0.6))
+                .foregroundStyle(Color(hex: PaletteHex.ink).opacity(0.65))
         }
         .animation(.snappy(duration: 0.2), value: value)
     }
@@ -81,6 +92,8 @@ struct StepButton: View {
     /// `s` だけ。訳す必要がないので素の文字で持つ
     let unit: String
     let size: CGSize
+    let fill: Color
+    let text: Color
     let step: () -> Void
 
     @State private var holding: Task<Void, Never>?
@@ -91,15 +104,16 @@ struct StepButton: View {
                 .font(.system(size: size.height * 0.48, weight: .heavy, design: .rounded))
             Text(unit)
                 .font(.system(size: size.height * 0.3, weight: .semibold))
-                .foregroundStyle(Color(hex: PaletteHex.ink).opacity(0.6))
+                .foregroundStyle(text.opacity(0.7))
         }
         .monospacedDigit()
         .lineLimit(1)
         .minimumScaleFactor(0.6)
-        .foregroundStyle(Color(hex: PaletteHex.ink))
+        .foregroundStyle(text)
         .frame(width: size.width, height: size.height)
-        .background(RoundedRectangle(cornerRadius: size.height * 0.34, style: .continuous)
-            .fill(Color.well.opacity(holding == nil ? 1 : 1.6)))
+        .background(RoundedRectangle(cornerRadius: size.height * 0.34, style: .continuous).fill(fill))
+        // 押している間は少し明るく。押せていることが指の下でも分かる
+        .brightness(holding == nil ? 0 : 0.15)
         .contentShape(Rectangle())
         // 押し続けても `perform` が呼ばれないよう、長い時間を指定しておく。
         .onLongPressGesture(minimumDuration: 3600, pressing: { pressing in

@@ -74,12 +74,15 @@ public struct DrainFace: View {
                 Group {
                     if isDone {
                         Text("おわり", bundle: .module).tracking(1)
+                    } else if engine.isPaused {
+                        // **止まっていることを、はっきり言葉で出す。** 水は灰色、左上のボタンは色つきの ▶
+                        Label { Text("一時停止中", bundle: .module) } icon: { Image(systemName: "pause.fill") }
                     } else {
                         Text(TimeText.clock(remaining)).monospacedDigit()
                     }
                 }
-                .font(.system(size: metrics.sub, weight: .semibold, design: .rounded))
-                .foregroundStyle(skin.inkDim)
+                .font(.system(size: metrics.sub, weight: engine.isPaused ? .heavy : .semibold, design: .rounded))
+                .foregroundStyle(engine.isPaused ? skin.ink : skin.inkDim)
                 .accessibilityIdentifier("sub")
             }
             // 下の小さい行と同じ高さを上にも取り、**大きい数字を画面のちょうど真ん中に置く**

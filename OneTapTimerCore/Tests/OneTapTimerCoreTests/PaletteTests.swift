@@ -33,4 +33,9 @@ struct PaletteTests {
         #expect(PaletteHex.contrast(PaletteHex.ink, PaletteHex.well) >= 4.5)
         #expect(PaletteHex.contrast(PaletteHex.ground, PaletteHex.accent) >= 4.5)  // 黒い文字を載せる
     }
+
+    @Test func 止めている間の灰色の水でも数字が読める() {
+        #expect(PaletteHex.contrast(PaletteHex.ink, PaletteHex.pausedBottom) >= 4.5)
+        #expect(PaletteHex.contrast(PaletteHex.ink, PaletteHex.pausedTop) >= 3.0)
+    }
 }

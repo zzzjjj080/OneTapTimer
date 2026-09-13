@@ -32,3 +32,37 @@ public struct SettingButton: View {
         .accessibilityIdentifier("gear")
     }
 }
+
+/// 一時停止のボタン。**左上に小さく**（あまり使わない）。
+///
+/// 走っている間は、設定の入口と同じ目立たない丸に ⏸。
+/// **止めている間は、色を塗った丸に ▶。** 灰色になった水と並んで、止まっていると一目で分かる。
+public struct PauseButton: View {
+    public var skin: Skin
+    public var isPaused: Bool
+    public var size: CGFloat
+    public var action: () -> Void
+
+    public init(skin: Skin, isPaused: Bool, size: CGFloat, action: @escaping () -> Void) {
+        self.skin = skin; self.isPaused = isPaused; self.size = size; self.action = action
+    }
+
+    public var body: some View {
+        Button(action: action) {
+            ZStack {
+                Circle().fill(isPaused ? skin.accent : skin.glass)
+                Image(systemName: isPaused ? "play.fill" : "pause.fill")
+                    .font(.system(size: size * 0.4, weight: .bold))
+                    // 塗った丸の上は地の色（ほぼ黒）。明るい色の上ではこちらが読める
+                    .foregroundStyle(isPaused ? Color(hex: PaletteHex.ground) : skin.glassInk)
+                    .offset(x: isPaused ? size * 0.03 : 0)   // ▶ は見た目の重心が左に寄るので少し右へ
+            }
+            .frame(width: size, height: size)
+            .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(isPaused ? "再開" : "一時停止", bundle: .module))
+        .accessibilityIdentifier("pause")
+    }
+}
+

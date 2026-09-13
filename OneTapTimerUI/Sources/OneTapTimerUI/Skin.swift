@@ -6,7 +6,7 @@ import OneTapTimerCore
 /// 個々の場所で `if isDone { ... }` と書き分けると必ず抜けが出るので、
 /// 状態ごとに「地・水・数字・弱い文字」を組で持たせる。
 public struct Skin: Sendable, Equatable {
-    public enum State: Sendable { case running, finalStretch, done }
+    public enum State: Sendable { case running, finalStretch, paused, done }
 
     public var state: State
     public var theme: ThemeHex
@@ -17,21 +17,31 @@ public struct Skin: Sendable, Equatable {
     /// 止めた画面は「満タンで待っている」見た目にして、次に開いたときと地続きにする。
     public static func of(_ engine: TimerEngine, at now: Date, theme: ThemeHex) -> Skin {
         if engine.isFinished && !engine.isCancelled { return Skin(state: .done, theme: theme) }
+        if engine.isPaused { return Skin(state: .paused, theme: theme) }
         return Skin(state: engine.isFinalStretch(at: now) ? .finalStretch : .running, theme: theme)
     }
 
     public var isDone: Bool { state == .done }
+    public var isPaused: Bool { state == .paused }
 
     public var ground: Color {
         isDone ? Color(hex: theme.doneGround) : Color(hex: PaletteHex.ground)
     }
 
     public var liquidTop: Color {
-        Color(hex: state == .finalStretch ? theme.lastTop : theme.liquidTop)
+        switch state {
+        case .finalStretch: Color(hex: theme.lastTop)
+        case .paused: Color(hex: PaletteHex.pausedTop)
+        default: Color(hex: theme.liquidTop)
+        }
     }
 
     public var liquidBottom: Color {
-        Color(hex: state == .finalStretch ? theme.lastBottom : theme.liquidBottom)
+        switch state {
+        case .finalStretch: Color(hex: theme.lastBottom)
+        case .paused: Color(hex: PaletteHex.pausedBottom)
+        default: Color(hex: theme.liquidBottom)
+        }
     }
 
     public var ink: Color {
