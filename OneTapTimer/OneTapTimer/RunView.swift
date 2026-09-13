@@ -44,10 +44,10 @@ struct RunView: View {
         #if DEBUG
         TimelineView(.periodic(from: .now, by: 1)) { _ in
             let keeping = runner.keeper?.isKeeping == true
-            Text((keeping ? "● 留め中  " : "○ 留めなし  ") + (runner.keeper?.lastEvent ?? "keeperなし"))
+            Text((keeping ? "● 留め中\n" : "○ 留めなし\n") + (runner.keeper?.lastEvent ?? "keeperなし"))
                 .font(.system(size: 9, weight: .semibold))
                 .foregroundStyle(keeping ? Color.green : Color.red)
-                .lineLimit(3)
+                .lineLimit(5)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 14)
                 .padding(.bottom, 4)

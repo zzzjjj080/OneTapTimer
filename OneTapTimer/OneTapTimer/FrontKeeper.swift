@@ -28,7 +28,11 @@ final class FrontKeeper: NSObject, ForegroundKeeping, WKExtendedRuntimeSessionDe
     /// 留めていてほしい間は true。`end()` で下ろす。遅れて届く張り直しを止めるのに使う
     private var wanted = false
     private var attempts = 0
-    private(set) var lastEvent = "未開始"
+    /// 直近の出来事（新しい順に4件）。**開き直しても消えないよう保存する。**
+    /// 文字盤へ戻ったあとに開き直すと、すぐ新しいタイマーが始まって「始める」で上書きされ、
+    /// 肝心の「なぜ終わったか」が読めなくなるため。
+    private static let logKey = "frontKeeperLog"
+    private(set) var lastEvent = (UserDefaults.standard.stringArray(forKey: FrontKeeper.logKey) ?? []).joined(separator: "\n")
 
     func begin() {
         wanted = true
@@ -122,10 +126,14 @@ final class FrontKeeper: NSObject, ForegroundKeeping, WKExtendedRuntimeSessionDe
     }
 
     private func log(_ message: String) {
-        let stamp = Date.now.formatted(date: .omitted, time: .standard)
-        lastEvent = stamp + " " + message
         #if DEBUG
-        print("[FrontKeeper] " + lastEvent)
+        let stamp = Date.now.formatted(date: .omitted, time: .standard)
+        var history = UserDefaults.standard.stringArray(forKey: Self.logKey) ?? []
+        history.insert(stamp + " " + message, at: 0)
+        history = Array(history.prefix(4))
+        UserDefaults.standard.set(history, forKey: Self.logKey)
+        lastEvent = history.joined(separator: "\n")
+        print("[FrontKeeper] " + history[0])
         #endif
     }
 }
