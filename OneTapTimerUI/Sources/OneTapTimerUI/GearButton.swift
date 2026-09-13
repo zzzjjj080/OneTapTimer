@@ -10,10 +10,13 @@ public struct SettingButton: View {
     public var skin: Skin
     /// 丸の直径。指1本で押せるよう、Watch でも 40pt は取る
     public var size: CGFloat
+    /// **見た目の丸より外側まで押せる幅。** 丸の周りのこの幅も押したことになる。
+    /// 置く側は、見た目の位置がずれないよう、この幅ぶん外側へ寄せて置く
+    public var hitPadding: CGFloat
     public var action: () -> Void
 
-    public init(skin: Skin, size: CGFloat, action: @escaping () -> Void) {
-        self.skin = skin; self.size = size; self.action = action
+    public init(skin: Skin, size: CGFloat, hitPadding: CGFloat = 0, action: @escaping () -> Void) {
+        self.skin = skin; self.size = size; self.hitPadding = hitPadding; self.action = action
     }
 
     public var body: some View {
@@ -25,7 +28,8 @@ public struct SettingButton: View {
                     .foregroundStyle(skin.glassInk)
             }
             .frame(width: size, height: size)
-            .contentShape(Circle())
+            .padding(hitPadding)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("時間を変える", bundle: .module))
@@ -41,10 +45,12 @@ public struct PauseButton: View {
     public var skin: Skin
     public var isPaused: Bool
     public var size: CGFloat
+    /// 見た目の丸より外側まで押せる幅（``SettingButton/hitPadding`` と同じ考え方）
+    public var hitPadding: CGFloat
     public var action: () -> Void
 
-    public init(skin: Skin, isPaused: Bool, size: CGFloat, action: @escaping () -> Void) {
-        self.skin = skin; self.isPaused = isPaused; self.size = size; self.action = action
+    public init(skin: Skin, isPaused: Bool, size: CGFloat, hitPadding: CGFloat = 0, action: @escaping () -> Void) {
+        self.skin = skin; self.isPaused = isPaused; self.size = size; self.hitPadding = hitPadding; self.action = action
     }
 
     public var body: some View {
@@ -58,7 +64,8 @@ public struct PauseButton: View {
                     .offset(x: isPaused ? size * 0.03 : 0)   // ▶ は見た目の重心が左に寄るので少し右へ
             }
             .frame(width: size, height: size)
-            .contentShape(Circle())
+            .padding(hitPadding)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(isPaused ? "再開" : "一時停止", bundle: .module))

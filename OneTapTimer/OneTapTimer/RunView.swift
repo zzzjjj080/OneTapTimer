@@ -26,24 +26,45 @@ struct RunView: View {
                 }
 
             // 上の中央。システムの時刻は右上に出るので、真ん中は空いている
-            SettingButton(skin: Skin.of(runner.engine, at: .now, theme: runner.themeHex), size: 42) {
+            // 押せる余白ぶん外へ寄せて置き、見た目の位置は変えない
+            SettingButton(skin: Skin.of(runner.engine, at: .now, theme: runner.themeHex),
+                          size: settingsSize, hitPadding: hitPadding) {
                 runner.openSettings()
             }
-            .padding(.top, 6)
+            .padding(.top, buttonsTop - hitPadding)
 
-            // 左上。**一時停止**（あまり使わないので小さく隅に）。角の丸みに掛からないよう少し内側へ
+            // 左上。**一時停止**（あまり使わないので隅に）。角の丸みに掛からないよう少し内側へ
             if !runner.engine.isFinished {
                 PauseButton(skin: Skin.of(runner.engine, at: .now, theme: runner.themeHex),
-                            isPaused: runner.engine.isPaused, size: 36) {
+                            isPaused: runner.engine.isPaused, size: pauseSize, hitPadding: hitPadding) {
                     runner.togglePause()
                 }
-                .padding(.leading, 18)
-                .padding(.top, 9)
+                .padding(.leading, pauseLeading - hitPadding)
+                // 設定の丸と縦の中心をそろえる
+                .padding(.top, buttonsTop + (settingsSize - pauseSize) / 2 - hitPadding)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         // 安全領域を外すのはここ1か所だけ。内側で重ねて外すと、かえって狭くなる
         .ignoresSafeArea()
+    }
+
+    // MARK: - 上のボタンの大きさ（2026-09-13：「押せる範囲を広く」と言われて大きくした）
+
+    private var screenWidth: CGFloat { WKInterfaceDevice.current().screenBounds.width }
+    /// 設定の丸。画面の幅の 23%（46mm で 48pt。前は 42pt）
+    private var settingsSize: CGFloat { screenWidth * 0.23 }
+    /// 一時停止の丸。画面の幅の 20%、ただし 36pt は下回らない（46mm で 42pt。前は 36pt）
+    private var pauseSize: CGFloat { max(36, screenWidth * 0.2) }
+    private var pauseLeading: CGFloat { 12 }
+    private var buttonsTop: CGFloat { 6 }
+    /// **見た目の丸の外側に足す、押せる余白。** 最大 8pt。
+    /// 2つのボタンの押せる範囲が重なると、間を押したときにどちらになるか分からないので、
+    /// 丸と丸のすき間の半分より手前で止める（40mm では 6pt ほどになる）
+    private var hitPadding: CGFloat {
+        let settingsLeft = (screenWidth - settingsSize) / 2
+        let pauseRight = pauseLeading + pauseSize
+        return max(0, min(8, (settingsLeft - pauseRight) / 2 - 1))
     }
 
     /// 「キャンセル ▶」。**クラウンの高さに、画面の右端いっぱいまで寄せて置く。**

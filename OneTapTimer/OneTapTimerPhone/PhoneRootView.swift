@@ -15,18 +15,20 @@ struct PhoneRootView: View {
             .onTapGesture { runner.startAgain() }
             .accessibilityIdentifier("face")
 
-            SettingButton(skin: Skin.of(runner.engine, at: .now, theme: runner.themeHex), size: 56) {
+            // 押せる余白（12pt）ぶん外へ寄せて置き、見た目の位置は変えない
+            SettingButton(skin: Skin.of(runner.engine, at: .now, theme: runner.themeHex),
+                          size: 66, hitPadding: 12) {
                 runner.openSettings()
             }
-            .padding(.top, 8)
+            .padding(.top, 8 - 12)
 
             if !runner.engine.isFinished {
                 PauseButton(skin: Skin.of(runner.engine, at: .now, theme: runner.themeHex),
-                            isPaused: runner.engine.isPaused, size: 52) {
+                            isPaused: runner.engine.isPaused, size: 60, hitPadding: 12) {
                     runner.togglePause()
                 }
-                .padding(.leading, 20)
-                .padding(.top, 10)
+                .padding(.leading, 20 - 12)
+                .padding(.top, 8 + (66 - 60) / 2 - 12)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
