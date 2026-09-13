@@ -3,40 +3,38 @@ import OneTapTimerCore
 
 /// 大きさの調整。Watch と iPhone で数字の大きさだけ違う。
 public struct FaceMetrics: Sendable {
-    public var digits: CGFloat
-    public var digitsShort: CGFloat
+    /// 大きい数字（秒だけ）
+    public var main: CGFloat
+    /// 下に添える小さい `1:33`／終わったときの「おわり」
+    public var sub: CGFloat
     public var label: CGFloat
     public var gap: CGFloat
 
-    public init(digits: CGFloat, digitsShort: CGFloat, label: CGFloat, gap: CGFloat) {
-        self.digits = digits; self.digitsShort = digitsShort; self.label = label; self.gap = gap
+    public init(main: CGFloat, sub: CGFloat, label: CGFloat, gap: CGFloat) {
+        self.main = main; self.sub = sub; self.label = label; self.gap = gap
     }
 
-    public static let watch = FaceMetrics(digits: 66, digitsShort: 96, label: 12, gap: 6)
-    public static let phone = FaceMetrics(digits: 128, digitsShort: 200, label: 20, gap: 12)
+    public static let watch = FaceMetrics(main: 96, sub: 20, label: 13, gap: 0)
+    public static let phone = FaceMetrics(main: 200, sub: 40, label: 22, gap: 4)
 
-    /// 下端の「長押しでキャンセル」
+    /// 下端の「タップで始める」
     var hint: CGFloat { label * 0.85 }
     var hintBottom: CGFloat { label * 1.6 }
 }
 
-/// 画面そのもの。**水位が下がり、真ん中に残りの数字。**
+/// 画面そのもの。**水位が下がり、真ん中に残りの秒を大きく、その下に `1:33` を小さく。**
 ///
 /// 時刻を受け取って描くだけの純粋な絵。動かすのは呼び出し側の `TimelineView`。
-/// 常時表示（Always-On）のときは `liveDigits` に false を渡すと、
-/// 数字の描画をシステム（`Text(timerInterval:)`）に任せる。
-/// アプリのコードが動かなくても数字が進むのはこちらだけ。
+/// 常時表示（腕を下ろした暗い画面）でも同じ絵を描く。watchOS はその絵を先の時刻ぶん先回りして描くので、
+/// **ここでは日時から範囲を作らない**（`now...終了時刻` が逆向きになって落ちた。引き継ぎ書 4-135）。
 public struct DrainFace: View {
     public var engine: TimerEngine
     public var now: Date
     public var theme: ThemeHex
     public var metrics: FaceMetrics
-    public var liveDigits: Bool
 
-    public init(engine: TimerEngine, now: Date, theme: ThemeHex, metrics: FaceMetrics,
-                liveDigits: Bool = true) {
+    public init(engine: TimerEngine, now: Date, theme: ThemeHex, metrics: FaceMetrics) {
         self.engine = engine; self.now = now; self.theme = theme; self.metrics = metrics
-        self.liveDigits = liveDigits
     }
 
     private var skin: Skin { Skin.of(engine, at: now, theme: theme) }
@@ -50,7 +48,7 @@ public struct DrainFace: View {
         if engine.isCancelled { return 1 }
         return engine.isFinished ? 0 : engine.fraction(at: now)
     }
-    private var secondsOnly: Bool { engine.isFinished || TimeText.showsSecondsOnly(remaining) }
+    private var isDone: Bool { engine.isFinished && !engine.isCancelled }
 
     public var body: some View {
         ZStack {
@@ -58,36 +56,41 @@ public struct DrainFace: View {
 
             Liquid(fraction: fraction, top: skin.liquidTop, bottom: skin.liquidBottom)
 
-            // **走っている間は数字だけ。** 「のこり」も「秒」も要らない。
-            // 何も添えないぶん、数字が画面のちょうど真ん中に来る
             VStack(spacing: metrics.gap) {
-                digits
-                    .font(.system(size: secondsOnly ? metrics.digitsShort : metrics.digits,
-                                  weight: .heavy, design: .rounded))
+                Text(TimeText.seconds(remaining))
+                    .font(.system(size: metrics.main, weight: .heavy, design: .rounded))
                     .monospacedDigit()
                     .lineLimit(1)
-                    .minimumScaleFactor(0.5)
+                    .minimumScaleFactor(0.4)
                     .foregroundStyle(skin.ink)
                     // 影は小さく。ぼかしの大きい影は描き直すたびに重い（大きな数字だとなおさら）
                     .shadow(color: .black.opacity(skin.isDone ? 0 : 0.22), radius: 2, y: 1)
                     .contentTransition(.numericText(countsDown: true))
+                    // **回ごとに別の数字として扱う。** 前の回の「0」から新しい回の数字へ桁が回る途中で、
+                    // 「0:10」のような半端な形が一瞬見えていた
+                    .id(engine.endAt)
                     .accessibilityIdentifier("digits")
 
-                if let label {
-                    Text(label, bundle: .module)
-                        .font(.system(size: metrics.label, weight: .medium))
-                        .tracking(1)
-                        .foregroundStyle(skin.inkDim)
-                        .accessibilityIdentifier("label")
+                Group {
+                    if isDone {
+                        Text("おわり", bundle: .module).tracking(1)
+                    } else {
+                        Text(TimeText.clock(remaining)).monospacedDigit()
+                    }
                 }
+                .font(.system(size: metrics.sub, weight: .semibold, design: .rounded))
+                .foregroundStyle(skin.inkDim)
+                .accessibilityIdentifier("sub")
             }
+            // 下の小さい行と同じ高さを上にも取り、**大きい数字を画面のちょうど真ん中に置く**
+            .padding(.top, metrics.sub * 1.2 + metrics.gap)
             .padding(.horizontal, 12)
 
             // 下端の案内
-            if let hint {
+            if isDone {
                 VStack {
                     Spacer()
-                    Text(hint, bundle: .module)
+                    Text("タップで始める", bundle: .module)
                         .font(.system(size: metrics.hint, weight: .medium))
                         .tracking(0.5)
                         .foregroundStyle(skin.inkDim.opacity(0.85))
@@ -97,30 +100,6 @@ public struct DrainFace: View {
             }
         }
         .animation(.easeInOut(duration: 0.35), value: skin)
-    }
-
-    @ViewBuilder
-    private var digits: some View {
-        // **`now` が終了時刻を過ぎていたら、範囲を作らない。**
-        // 常時表示（腕を下ろした暗い画面）では、watchOS が**先の時刻の絵を先回りして描く。**
-        // エンジンはまだ「終わっていない」のに `now` だけ終了時刻を越え、`now...endAt` が逆向きになって
-        // Swift が落ちていた。90秒のタイマーで30秒ほどのところで文字盤に戻ったのはこれ（クラッシュ）
-        if engine.isCancelled || liveDigits || engine.isFinished || now >= engine.endAt {
-            Text(TimeText.display(remaining))
-        } else {
-            // システムが描く。書式は `m:ss` 固定（1分を切っても `0:45`）。
-            // 常時表示の暗い画面でだけ使うので、そこは目をつぶる
-            Text(timerInterval: now...engine.endAt, pauseTime: nil, countsDown: true, showsHours: false)
-        }
-    }
-
-    /// 添える文字。**走っている間は出さない。** 終わったときだけ。
-    private var label: LocalizedStringKey? {
-        (engine.isFinished && !engine.isCancelled) ? "おわり" : nil
-    }
-
-    private var hint: LocalizedStringKey? {
-        (engine.isFinished && !engine.isCancelled) ? "タップで始める" : nil
     }
 }
 

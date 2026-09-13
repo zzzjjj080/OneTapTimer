@@ -16,7 +16,7 @@ struct DrainFaceTests {
         #expect(!engine.isFinished)
         for later in [30.0, 89.0, 90.0, 90.5, 120.0, 600.0] {
             let face = DrainFace(engine: engine, now: t0 + later, theme: ThemeHex.at(1),
-                                 metrics: .watch, liveDigits: false)
+                                 metrics: .watch)
             _ = face.body
         }
     }
@@ -25,7 +25,7 @@ struct DrainFaceTests {
         let engine = TimerEngine(duration: 10, startedAt: t0)
         for later in [0.0, 9.9, 10.0, 11.0] {
             _ = DrainFace(engine: engine, now: t0 + later, theme: ThemeHex.at(2),
-                          metrics: .watch, liveDigits: true).body
+                          metrics: .watch).body
         }
     }
 }

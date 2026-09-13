@@ -46,26 +46,21 @@ public struct DurationEditor: View {
         }
     }
 
-    /// `1分30秒` の「1」と「30」を大きく、単位を小さく。
+    /// **大きく秒（`90`）、その下に小さく `1:30`。** 走っている画面と同じ並び。
     private var valueText: some View {
-        let m = value / 60, s = value % 60
-        let big = Font.system(size: valueSize, weight: .heavy, design: .rounded)
-        let small = Font.system(size: valueSize * 0.38, weight: .semibold)
-        return HStack(alignment: .firstTextBaseline, spacing: 1) {
-            if m > 0 {
-                Text("\(m)").font(big)
-                Text("分", bundle: .module).font(small)
-            }
-            if s > 0 || m == 0 {
-                Text(m > 0 ? String(format: "%02d", s) : "\(s)").font(big)
-                Text("秒", bundle: .module).font(small)
-            }
+        VStack(spacing: 0) {
+            Text("\(value)")
+                .font(.system(size: valueSize, weight: .heavy, design: .rounded))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .foregroundStyle(Color(hex: PaletteHex.ink))
+                .contentTransition(.numericText())
+            Text(TimeText.clock(Double(value)))
+                .font(.system(size: valueSize * 0.36, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(Color(hex: PaletteHex.ink).opacity(0.6))
         }
-        .monospacedDigit()
-        .lineLimit(1)
-        .minimumScaleFactor(0.6)
-        .foregroundStyle(Color(hex: PaletteHex.ink))
-        .contentTransition(.numericText())
         .animation(.snappy(duration: 0.2), value: value)
     }
 

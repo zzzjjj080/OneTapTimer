@@ -20,15 +20,13 @@ public enum TimeText {
         return String(format: "%d:%02d", s / 60, s % 60)
     }
 
-    /// 1分を切ったら秒だけを出すか。
-    public static func showsSecondsOnly(_ seconds: Double) -> Bool {
-        wholeSeconds(seconds) < 60
-    }
-
-    /// 画面の大きい数字。**1分を切ったら秒だけ**（`45`）、それまでは `m:ss`。
-    public static func display(_ seconds: Double) -> String {
-        let s = wholeSeconds(seconds)
-        return s < 60 ? String(s) : clock(seconds)
+    /// 画面の大きい数字。**いつも秒だけ**（`93`）。コロンは付けない。
+    ///
+    /// 2026-09-13 に「1分を切ったら秒だけ、それまでは `1:33`」から変えた。
+    /// 90秒で使う人には、形が途中で変わるより、ずっと同じ秒の数字のほうが読みやすい。
+    /// `m:ss` は下に小さく添える（``clock(_:)``）。
+    public static func seconds(_ seconds: Double) -> String {
+        String(wholeSeconds(seconds))
     }
 
     /// `1分30秒` `45秒` `10分` / 英語なら `1m30s` `45s` `10m`。設定の値やチップに使う。

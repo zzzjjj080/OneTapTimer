@@ -19,15 +19,14 @@ struct TimeTextTests {
         #expect(TimeText.clock(3599.5) == "60:00")
     }
 
-    @Test func 一分を切ったら秒だけ() {
-        #expect(TimeText.display(90) == "1:30")
-        #expect(TimeText.display(60) == "1:00")
-        #expect(TimeText.display(59.9) == "1:00")   // 切り上げて60なので、まだ m:ss
-        #expect(TimeText.display(59.0) == "59")
-        #expect(TimeText.display(0.4) == "1")
-        #expect(TimeText.display(0) == "0")
-        #expect(TimeText.showsSecondsOnly(59.0))
-        #expect(!TimeText.showsSecondsOnly(59.5))
+    @Test func 大きい数字はいつも秒だけ() {
+        #expect(TimeText.seconds(90) == "90")
+        #expect(TimeText.seconds(89.2) == "90")      // 切り上げ
+        #expect(TimeText.seconds(89.0) == "89")
+        #expect(TimeText.seconds(3600) == "3600")
+        #expect(TimeText.seconds(0.4) == "1")
+        #expect(TimeText.seconds(0) == "0")
+        #expect(TimeText.seconds(90.0000000001) == "90")
     }
 
     @Test func 短い表記() {
