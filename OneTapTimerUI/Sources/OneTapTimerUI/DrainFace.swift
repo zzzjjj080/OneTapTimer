@@ -101,7 +101,11 @@ public struct DrainFace: View {
 
     @ViewBuilder
     private var digits: some View {
-        if engine.isCancelled || liveDigits || engine.isFinished {
+        // **`now` が終了時刻を過ぎていたら、範囲を作らない。**
+        // 常時表示（腕を下ろした暗い画面）では、watchOS が**先の時刻の絵を先回りして描く。**
+        // エンジンはまだ「終わっていない」のに `now` だけ終了時刻を越え、`now...endAt` が逆向きになって
+        // Swift が落ちていた。90秒のタイマーで30秒ほどのところで文字盤に戻ったのはこれ（クラッシュ）
+        if engine.isCancelled || liveDigits || engine.isFinished || now >= engine.endAt {
             Text(TimeText.display(remaining))
         } else {
             // システムが描く。書式は `m:ss` 固定（1分を切っても `0:45`）。
