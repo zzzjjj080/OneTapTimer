@@ -24,6 +24,7 @@ final class SpyScheduler: EndScheduling {
 final class SpyKeeper: ForegroundKeeping {
     var isKeeping = false
     var onChange: (() -> Void)?
+    var onUserLeft: (() -> Void)?
     var begins = 0
     var ends = 0
     func begin() { begins += 1; isKeeping = true; onChange?() }
@@ -234,5 +235,81 @@ struct TapAndWristTests {
         #expect(!r.engine.isFinished)
         #expect(r.engine.remaining(at: t0 + 110) == 90)
         #expect(h.log == ["start", "start"])
+    }
+}
+
+/// 腕を下ろして画面が消えるのと、クラウンで出るのは、どちらも `.background` で届く。
+@MainActor
+struct BackgroundTests {
+    let t0 = Date(timeIntervalSince1970: 4_000_000)
+
+    private func fresh() -> UserDefaults {
+        let name = "test-\(UUID().uuidString)"
+        let d = UserDefaults(suiteName: name)!
+        d.removePersistentDomain(forName: name)
+        return d
+    }
+
+    @Test func 腕を下ろして画面が消えても止まらない() {
+        let k = SpyKeeper()
+        let r = Runner(haptics: SpyHaptics(), keeper: k, notifier: SpyScheduler(), defaults: fresh(), now: t0)
+        r.activate(now: t0)
+        r.goIdle(now: t0 + 1)                 // 腕を下ろした
+        r.enteredBackground(now: t0 + 31)     // 30秒後に画面が消えた
+        #expect(!r.engine.isFinished)
+        #expect(r.engine.remaining(at: t0 + 31) == 59)
+        #expect(k.ends == 0)                  // 前面の留めも外さない
+    }
+
+    @Test func 画面が消えたあと腕を上げたら続き() {
+        let h = SpyHaptics()
+        let r = Runner(haptics: h, keeper: SpyKeeper(), notifier: SpyScheduler(), defaults: fresh(), now: t0)
+        r.activate(now: t0)
+        r.goIdle(now: t0 + 1)
+        r.enteredBackground(now: t0 + 31)
+        r.goIdle(now: t0 + 39)
+        r.activate(now: t0 + 40)
+        #expect(r.engine.remaining(at: t0 + 40) == 50)
+        #expect(h.log == ["start"])           // 始め直していない
+    }
+
+    @Test func クラウンで出たら止まる() {
+        let k = SpyKeeper(), s = SpyScheduler()
+        let r = Runner(haptics: SpyHaptics(), keeper: k, notifier: s, defaults: fresh(), now: t0)
+        r.activate(now: t0)
+        r.goIdle(now: t0 + 10)                // 押した瞬間に一度 inactive を通る
+        r.enteredBackground(now: t0 + 10.3)
+        #expect(r.engine.isCancelled)
+        #expect(k.ends == 1)
+        #expect(s.cancels == 1)
+    }
+
+    @Test func 見ている状態から直接出ても止まる() {
+        let r = Runner(haptics: SpyHaptics(), keeper: SpyKeeper(), notifier: SpyScheduler(), defaults: fresh(), now: t0)
+        r.activate(now: t0)
+        r.enteredBackground(now: t0 + 5)
+        #expect(r.engine.isCancelled)
+    }
+
+    @Test func 腕を上げたとき留めが切れていたら張り直す() {
+        let k = SpyKeeper()
+        let r = Runner(haptics: SpyHaptics(), keeper: k, notifier: SpyScheduler(), defaults: fresh(), now: t0)
+        r.activate(now: t0)
+        #expect(k.begins == 1)
+        k.isKeeping = false; k.onChange?()    // 途中でセッションが切れた
+        r.goIdle(now: t0 + 5)
+        r.activate(now: t0 + 20)
+        #expect(k.begins == 2)
+        #expect(!r.engine.isFinished)
+    }
+
+    @Test func セッションが前面から外れて終わったら止める() {
+        let k = SpyKeeper(), sch = SpyScheduler()
+        let r = Runner(haptics: SpyHaptics(), keeper: k, notifier: sch, defaults: fresh(), now: t0)
+        r.activate(now: t0)
+        k.isKeeping = false
+        k.onUserLeft?()                        // クラウンを押すと、セッション側からこれが来る
+        #expect(r.engine.isCancelled)
+        #expect(sch.cancels == 1)
     }
 }

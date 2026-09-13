@@ -13,6 +13,9 @@ public protocol ForegroundKeeping: AnyObject {
     var isKeeping: Bool { get }
     /// 留まれるかどうかが変わったときに呼ぶ
     var onChange: (() -> Void)? { get set }
+    /// **利用者が自分で出ていった**と、セッションの終わり方から分かったときに呼ぶ
+    /// （クラウンを押した／ほかのアプリへ移った）。腕を下ろしただけでは呼ばない
+    var onUserLeft: (() -> Void)? { get set }
     func begin()
     func end()
 }

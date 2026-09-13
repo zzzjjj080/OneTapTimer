@@ -28,14 +28,15 @@ struct OneTapTimerApp: App {
                 .environment(runner)
         }
         // **3つを区別する。**
-        // active   … 見ている。開いた瞬間ならここで走り出す
-        // inactive … 腕を下ろして画面が暗い。タイマーはそのまま、合図は通知に任せる
-        // background … クラウンを押して出た。**走っているものは止める**（裏では動かさない）
+        // active     … 見ている。開いた瞬間ならここで走り出す
+        // inactive   … 腕を下ろして画面が暗い。タイマーはそのまま
+        // background … **2通りある。** クラウンで出たなら止める。腕を下ろしていて画面が消えただけなら続ける
+        //              （見分けは Runner.enteredBackground。暗い画面が続いたあとかどうかで決める）
         .onChange(of: phase, initial: true) { _, new in
             switch new {
             case .active:     runner.activate()
             case .inactive:   runner.goIdle()
-            case .background: runner.leave()
+            case .background: runner.enteredBackground()
             @unknown default: runner.goIdle()
             }
         }

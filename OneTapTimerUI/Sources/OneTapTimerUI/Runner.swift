@@ -35,6 +35,15 @@ public final class Runner {
     public private(set) var theme: Int
     public var themeHex: ThemeHex { ThemeHex.at(theme) }
 
+    /// 腕を下ろして画面が暗くなった時刻。`.background` が来たときに、
+    /// **クラウンで自分で出たのか、画面が消えただけなのか**を見分けるのに使う。
+    private var inactiveSince: Date?
+
+    /// `.inactive` になってからこれより速く `.background` まで来たら「自分で出た」とみなす。
+    /// クラウンを押したときの切り替わりは 0.5 秒もかからない。
+    /// 腕を下ろしたときは、暗い画面がしばらく続いてから消える。
+    public static let deliberateLeaveWindow: TimeInterval = 1.5
+
     /// アプリの外から開いたか。**「開いたら始まる」はここでしか起きない。**
     /// 腕を下ろして上げただけ（`.inactive` → `.active`）で始まってしまうのを防ぐ。
     private var cameFromOutside = true
@@ -43,7 +52,7 @@ public final class Runner {
     public let gate = NotificationGate()
     /// 走っている間アプリを前面に留めるもの（Watch だけ。iPhone は nil）
     public var keeper: ForegroundKeeping? {
-        didSet { keeper?.onChange = { [weak self] in self?.keeperChanged() } }
+        didSet { wireKeeper() }
     }
 
     private let haptics: TimerHaptics
@@ -81,7 +90,14 @@ public final class Runner {
 
         // `didSet` は init の中では走らないので、ここで結び直す
         self.keeper = keeper
+        wireKeeper()
+    }
+
+    private func wireKeeper() {
         keeper?.onChange = { [weak self] in self?.keeperChanged() }
+        // クラウンで出るとセッションは「前面から外れた」で終わる。**これが一番確かな「出ていった」の合図。**
+        // `.background` の時間差での見分け（enteredBackground）と二重に効かせておく
+        keeper?.onUserLeft = { [weak self] in self?.leave() }
     }
 
     // MARK: - 画面の出入り
@@ -89,6 +105,7 @@ public final class Runner {
     /// 前に出た。**アプリの外から開いたときだけ、ここで始める。**
     public func activate(now: Date = .now) {
         isActive = true
+        inactiveSince = nil
         gate.isForeground = true
 
         // 腕を下ろしている間に終わっていたぶんに追いつく。ここでは鳴らさない（通知が済ませている）
@@ -110,6 +127,12 @@ public final class Runner {
         } else if !engine.isFinished {
             startTicking()
         }
+
+        // 走っているのに前面を留められていなければ、見ているうちに張り直す。
+        // セッションは前面にいる間しか始められない。途中で切れていたら、ここが取り返す機会
+        if !engine.isFinished, keeper?.isKeeping == false {
+            keeper?.begin()
+        }
         persist()
     }
 
@@ -117,10 +140,28 @@ public final class Runner {
     ///
     /// 前面に留まれているなら、こちらのコードはまだ動くので時計も止めない。
     /// 留まれていないときだけ、終わりの合図を通知に任せる（`gate` を下ろす）。
-    public func goIdle() {
+    public func goIdle(now: Date = .now) {
         isActive = false
+        if inactiveSince == nil { inactiveSince = now }
         updateGate()
         if keeper?.isKeeping != true { stopTicking() }
+    }
+
+    /// `.background` になった。**クラウンで出たのか、腕を下ろして画面が消えただけかを見分ける。**
+    ///
+    /// どちらも `.background` として届く。前は全部を「出た」とみなしていたので、
+    /// 腕を下ろして画面が消えた瞬間（30秒ほど）にタイマーを止め、前面の留めも外していた。
+    /// 留めが外れると watchOS はそのまま文字盤へ戻すので、「勝手に閉じられた」ように見えた。
+    ///
+    /// - 暗い画面が `deliberateLeaveWindow` 以上続いてから来た → 画面が消えただけ。**続ける**
+    /// - 見ている状態から一気に来た → クラウン（またはほかのアプリ）。**止める**
+    public func enteredBackground(now: Date = .now) {
+        let dimmedFor = inactiveSince.map { now.timeIntervalSince($0) } ?? 0
+        if dimmedFor >= Self.deliberateLeaveWindow {
+            goIdle(now: now)
+        } else {
+            leave(now: now)
+        }
     }
 
     /// アプリから出た（クラウンを押した／ほかのアプリへ移った）。**走っているものは止める。**
@@ -133,6 +174,7 @@ public final class Runner {
     /// クラウンなら「止めて文字盤へ」が一動作で済むので、そちらへ寄せた。
     public func leave(now: Date = .now) {
         isActive = false
+        inactiveSince = nil
         cameFromOutside = true
         stopTicking()
         keeper?.end()
