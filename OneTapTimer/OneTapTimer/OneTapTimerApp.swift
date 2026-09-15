@@ -18,7 +18,12 @@ struct OneTapTimerApp: App {
             return Runner(haptics: Haptics(), notifier: SilentNotifier())
         }
         #endif
-        return Runner(haptics: Haptics(), keeper: FrontKeeper())
+        let runner = Runner(haptics: Haptics(), keeper: FrontKeeper())
+        // 終わって振動が鳴り終わったら、1秒おいてアプリを閉じる（本人の希望）。
+        // watchOS には「文字盤へ戻す」呼び出しが無いので、**プロセスを終える。終えると文字盤が出る。**
+        // Apple は自分で閉じるアプリを勧めていない（落ちたように見える）ので、審査メモに意図を書く
+        runner.closeAfterFinish = { exit(0) }
+        return runner
     }
     @Environment(\.scenePhase) private var phase
 

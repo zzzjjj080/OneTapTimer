@@ -380,3 +380,56 @@ struct PauseTests {
         #expect(!r.engine.isPaused)
     }
 }
+
+/// 終わって振動が鳴り終わったら、1秒おいてアプリを閉じる（Watch だけ）。
+@MainActor
+struct CloseAfterFinishTests {
+    let t0 = Date(timeIntervalSince1970: 7_000_000)
+
+    final class Counter { var n = 0 }
+
+    private func fresh() -> UserDefaults {
+        let name = "test-\(UUID().uuidString)"
+        let d = UserDefaults(suiteName: name)!
+        d.removePersistentDomain(forName: name)
+        return d
+    }
+
+    /// 腕を下ろしている間に終わったことにする（終わりの合図は鳴らさない経路）
+    private func finishedRunner(keeper: SpyKeeper, counter: Counter?) -> Runner {
+        let r = Runner(haptics: SpyHaptics(), keeper: keeper, notifier: SpyScheduler(), defaults: fresh(), now: t0)
+        if let counter { r.closeAfterFinish = { counter.n += 1 } }
+        r.closeDelay = 0.01
+        r.activate(now: t0)
+        r.goIdle(now: t0 + 1)
+        r.activate(now: t0 + 100)
+        return r
+    }
+
+    @Test func 鳴り終わって少し待ってから閉じる() async {
+        let k = SpyKeeper(), c = Counter()
+        let r = finishedRunner(keeper: k, counter: c)
+        #expect(r.engine.isFinished)
+        await r.settleAfterFinish(run: r.engine.endAt)
+        #expect(c.n == 1)
+        #expect(k.ends >= 1)
+    }
+
+    @Test func 待っている間に次を始めたら閉じない() async {
+        let k = SpyKeeper(), c = Counter()
+        let r = finishedRunner(keeper: k, counter: c)
+        let run = r.engine.endAt
+        r.startAgain(now: t0 + 101)            // 「おわり」をタップして次が始まった
+        await r.settleAfterFinish(run: run)
+        #expect(c.n == 0)
+        #expect(!r.engine.isFinished)
+    }
+
+    @Test func 閉じる処理が無ければ閉じずに留めだけ外す() async {
+        let k = SpyKeeper()
+        let r = finishedRunner(keeper: k, counter: nil)
+        k.isKeeping = true
+        await r.settleAfterFinish(run: r.engine.endAt)
+        #expect(!k.isKeeping)
+    }
+}

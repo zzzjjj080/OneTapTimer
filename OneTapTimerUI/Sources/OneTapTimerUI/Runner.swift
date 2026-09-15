@@ -55,6 +55,13 @@ public final class Runner {
         didSet { wireKeeper() }
     }
 
+    /// 終わって振動が鳴り終わってから ``closeDelay`` 秒おいて呼ぶ、**アプリを閉じる処理**。
+    /// Watch だけが渡す（2026-09-15、本人の希望「鳴り終わって1秒くらいで閉じる」）。
+    /// iPhone は渡さない。iPhone のアプリが自分で消えるのはクラッシュに見える
+    public var closeAfterFinish: (() -> Void)?
+    /// 鳴り終わってから閉じるまでの秒数
+    var closeDelay: TimeInterval = 1.0
+
     private let haptics: TimerHaptics
     private let defaults: UserDefaults
     private var ticker: Task<Void, Never>?
@@ -311,20 +318,35 @@ public final class Runner {
         notifier.cancel()
         persist()
 
-        // 前面に留めるのをやめるのは、**鳴り終わってから。**
-        // 先にやめると、腕を下ろしている間はアプリが止められ、長い振動が途中で切れる。
-        // やめると watchOS がいつもどおり文字盤へ戻していく
-        // （**アプリを自分で閉じる API は watchOS に無い**ので、ここまでが限界）。
         let finishedRun = engine.endAt
-        Task { [weak self] in
-            guard let self else { return }
-            await self.haptics.finished()
-            // 鳴っている間に「おわり」をタップして次が始まっていたら、そちらの留めを切らない
-            guard self.engine.isFinished, self.engine.endAt == finishedRun else { return }
-            self.keeper?.end()
-            self.updateGate()
-        }
+        Task { [weak self] in await self?.settleAfterFinish(run: finishedRun) }
         return true
+    }
+
+    /// 終わったあとの後始末。**鳴り終わるまで待ち、Watch なら1秒おいてアプリを閉じる。**
+    ///
+    /// **閉じるまで前面の留めを外さない。** 先に外すと、腕を下ろしている間はアプリが止められて
+    /// 1秒後の「閉じる」が走らず、watchOS がいつもどおり文字盤へ戻すまで待たされる（「なかなか閉じない」）。
+    /// 閉じる処理が無い（iPhone）なら、鳴り終わった時点で留めだけ外す。
+    func settleAfterFinish(run: Date) async {
+        await haptics.finished()
+        // 鳴っている間に「おわり」をタップして次が始まっていたら、何もしない
+        guard isSameFinishedRun(run) else { return }
+        guard let close = closeAfterFinish else {
+            keeper?.end()
+            updateGate()
+            return
+        }
+        try? await Task.sleep(for: .seconds(closeDelay))
+        guard isSameFinishedRun(run) else { return }
+        keeper?.end()
+        updateGate()
+        close()
+    }
+
+    /// 終わったのが、まだその回のままか（その後にタップで次が始まっていないか）
+    private func isSameFinishedRun(_ run: Date) -> Bool {
+        engine.isFinished && !engine.isCancelled && engine.endAt == run
     }
 
     private func persist() {
