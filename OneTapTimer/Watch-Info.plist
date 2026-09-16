@@ -3,6 +3,11 @@
 <plist version="1.0">
 <dict>
 	<!-- 暗号化の申告。通信そのものをしないので「該当なし」 -->
+	<!-- 実機に入っている版を画面で確かめるための印。インストール用スクリプトが毎回渡す
+	     （Xcode から直接ビルドすると空になる。そのときは版番号だけ出る）-->
+	<key>OTTBuildStamp</key>
+	<string>$(OTT_BUILD_STAMP)</string>
+
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 

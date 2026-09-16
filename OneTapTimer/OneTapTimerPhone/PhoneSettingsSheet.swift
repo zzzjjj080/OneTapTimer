@@ -20,7 +20,12 @@ struct PhoneSettingsSheet: View {
                            onColor: { runner.cycleTheme() },
                            onDone: { runner.apply(duration: draft) })
                 .padding(.horizontal, 20)
-                .padding(.bottom, 20)
+
+            Text(BuildStamp.text)
+                .font(.system(size: 12, weight: .medium))
+                .monospacedDigit()
+                .foregroundStyle(Color(hex: PaletteHex.ink).opacity(0.35))
+                .padding(.bottom, 16)
         }
         .padding(.top, 28)
         .onAppear { draft = runner.duration }

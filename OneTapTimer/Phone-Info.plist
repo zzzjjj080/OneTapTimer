@@ -2,6 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- 実機に入っている版を画面で確かめるための印。インストール用スクリプトが毎回渡す
+	     （Xcode から直接ビルドすると空になる。そのときは版番号だけ出る）-->
+	<key>OTTBuildStamp</key>
+	<string>$(OTT_BUILD_STAMP)</string>
+
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>UIApplicationSceneManifest</key>
