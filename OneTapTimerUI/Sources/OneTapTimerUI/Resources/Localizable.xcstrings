@@ -1,5 +1,5 @@
 {
-  "sourceLanguage": "ja",
+  "sourceLanguage": "en",
   "strings": {
     "分": {
       "comment": "設定の値の単位",
@@ -8,6 +8,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "m"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分"
           }
         }
       }
@@ -20,6 +26,12 @@
             "state": "translated",
             "value": "DONE"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "おわり"
+          }
         }
       }
     },
@@ -30,6 +42,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Change duration"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "時間を変える"
           }
         }
       }
@@ -42,6 +60,12 @@
             "state": "translated",
             "value": "Tap to start"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "タップで始める"
+          }
         }
       }
     },
@@ -52,6 +76,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Color"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "色"
           }
         }
       }
@@ -64,6 +94,12 @@
             "state": "translated",
             "value": "Done"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完了"
+          }
         }
       }
     },
@@ -74,6 +110,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "s"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "秒"
           }
         }
       }
@@ -86,6 +128,12 @@
             "state": "translated",
             "value": "PAUSED"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一時停止中"
+          }
         }
       }
     },
@@ -97,6 +145,12 @@
             "state": "translated",
             "value": "Pause"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一時停止"
+          }
         }
       }
     },
@@ -107,6 +161,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Resume"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "再開"
           }
         }
       }

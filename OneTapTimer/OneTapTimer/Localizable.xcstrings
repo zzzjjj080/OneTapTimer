@@ -1,5 +1,5 @@
 {
-  "sourceLanguage": "ja",
+  "sourceLanguage": "en",
   "strings": {
     "キャンセル": {
       "comment": "走っている画面。クラウンの高さに置く案内",
@@ -8,6 +8,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cancel"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キャンセル"
           }
         }
       }

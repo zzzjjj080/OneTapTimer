@@ -17,9 +17,10 @@ struct RunView: View {
                 .contentShape(Rectangle())
                 .onTapGesture { runner.startAgain() }
                 .accessibilityIdentifier("face")
-                // 画面の外、右のここにクラウンがある。**文字だけでは、どこを押すのか分からない。**
-                // クラウンを左に設定していても画面ごと180度回るので、右端で合っている
-                .overlay(alignment: .topTrailing) {
+                // 画面の外、クラウンのある側に置く。**文字だけでは、どこを押すのか分からない。**
+                // クラウンを左にしている人は時計を逆さに着けていて、画面は180度回るが
+                // クラウンは装着者から見て**左下**に来る（右上のままだと反対側を指す）
+                .overlay(alignment: crownOnLeft ? .bottomLeading : .topTrailing) {
                     if !runner.engine.isFinished {
                         crownHint
                     }
@@ -67,17 +68,34 @@ struct RunView: View {
         return max(0, min(8, (settingsLeft - pauseRight) / 2 - 1))
     }
 
-    /// 「キャンセル ▶」。**クラウンの高さに、画面の右端いっぱいまで寄せて置く。**
-    /// クラウンは右側の、上から3割ほどのところにある。矢印がその外側を指す。
+    /// クラウンが装着者から見て左にあるか。**時計の設定（一般 → 向き）をそのまま読む**ので、
+    /// アプリ側に設定は要らない。
+    private var crownOnLeft: Bool {
+        #if DEBUG
+        // 撮影・確認用。シミュレータでは向きを変えにくいので、起動引数 -OTTCrownLeft YES で左にする
+        if UserDefaults.standard.bool(forKey: "OTTCrownLeft") { return true }
+        #endif
+        return WKInterfaceDevice.current().crownOrientation == .left
+    }
+
+    /// 「キャンセル ▶」。**クラウンの高さに、画面の端いっぱいまで寄せて置く。**
+    /// クラウンは右側の上から3割ほど。左のときは180度回った位置＝左側の下から3割ほど。
+    /// 矢印がその外側を指す。
     private var crownHint: some View {
         HStack(spacing: 2) {
+            if crownOnLeft {
+                Image(systemName: "arrowtriangle.left.fill")
+                    .font(.system(size: 9, weight: .black))
+            }
             Text("キャンセル")
                 .font(.system(size: 11, weight: .medium))
-            Image(systemName: "arrowtriangle.right.fill")
-                .font(.system(size: 9, weight: .black))
+            if !crownOnLeft {
+                Image(systemName: "arrowtriangle.right.fill")
+                    .font(.system(size: 9, weight: .black))
+            }
         }
         .foregroundStyle(Color(hex: PaletteHex.ink).opacity(0.7))
-        .padding(.top, WKInterfaceDevice.current().screenBounds.height * 0.26)
+        .padding(crownOnLeft ? .bottom : .top, WKInterfaceDevice.current().screenBounds.height * 0.26)
         .accessibilityHidden(true)
     }
 

@@ -1,5 +1,5 @@
 {
-  "sourceLanguage": "ja",
+  "sourceLanguage": "en",
   "strings": {
     "ワンタップタイマー": {
       "localizations": {
@@ -7,6 +7,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "One Tap Timer"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ワンタップタイマー"
           }
         }
       }
@@ -18,6 +24,12 @@
             "state": "translated",
             "value": "One Tap"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ワンタップ"
+          }
         }
       }
     },
@@ -27,6 +39,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tap to start"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "押すと始まる"
           }
         }
       }
@@ -38,6 +56,12 @@
             "state": "translated",
             "value": "Tap to start the timer."
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "タップするとタイマーが始まります。"
+          }
         }
       }
     },
@@ -47,6 +71,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "s"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "秒"
           }
         }
       }
@@ -58,6 +88,12 @@
             "state": "translated",
             "value": "left"
           }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "のこり"
+          }
         }
       }
     },
@@ -67,6 +103,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "s · tap to start"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "秒 · 押すと始まる"
           }
         }
       }

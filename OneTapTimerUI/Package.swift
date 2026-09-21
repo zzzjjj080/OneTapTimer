@@ -7,7 +7,7 @@ import PackageDescription
 // WatchKit にも UIKit にも依存させない（SwiftUI と UserNotifications だけ）。
 let package = Package(
     name: "OneTapTimerUI",
-    defaultLocalization: "ja",
+    defaultLocalization: "en",
     platforms: [.watchOS(.v11), .iOS(.v18), .macOS(.v14)],
     products: [.library(name: "OneTapTimerUI", targets: ["OneTapTimerUI"])],
     dependencies: [.package(path: "../OneTapTimerCore")],
