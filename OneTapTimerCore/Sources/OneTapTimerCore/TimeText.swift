@@ -43,6 +43,12 @@ public enum TimeText {
     }
 
     private static func units(for locale: Locale) -> (String, String) {
-        locale.language.languageCode == .japanese ? ("分", "秒") : ("m", "s")
+        let u = Units.of(locale)
+        return (u.minute, u.second)
+    }
+
+    /// 秒の短い単位（`s` / `秒` / `초`）。設定のボタンの右肩に添える。
+    public static func secondUnit(locale: Locale = .current) -> String {
+        Units.of(locale).second
     }
 }

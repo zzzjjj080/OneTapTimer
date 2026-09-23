@@ -38,4 +38,24 @@ struct TimeTextTests {
         #expect(TimeText.brief(45, locale: en) == "45s")
         #expect(TimeText.brief(600, locale: en) == "10m")
     }
+
+    @Test("単位は言語ごとに変わる。知らない言語は英語に落ちる")
+    func briefInManyLanguages() {
+        #expect(TimeText.brief(90, locale: Locale(identifier: "ko_KR")) == "1분30초")
+        #expect(TimeText.brief(90, locale: Locale(identifier: "ru_RU")) == "1м30с")
+        #expect(TimeText.brief(45, locale: Locale(identifier: "tr_TR")) == "45sn")
+        #expect(TimeText.brief(90, locale: Locale(identifier: "zh_Hans_CN")) == "1分30秒")
+        #expect(TimeText.brief(90, locale: Locale(identifier: "zh_Hant_TW")) == "1分30秒")
+        // 訳を持たない言語（フィンランド語）は英語と同じ
+        #expect(TimeText.brief(90, locale: Locale(identifier: "fi_FI")) == "1m30s")
+        #expect(TimeText.secondUnit(locale: Locale(identifier: "ja_JP")) == "秒")
+    }
+
+    @Test("画面に出る言語ぶんの単位がそろっている")
+    func unitsCoverEveryLanguage() {
+        for lang in ["en", "ja", "zh-Hans", "zh-Hant", "ko", "es", "fr", "de",
+                     "it", "pt-BR", "ru", "ar", "nl", "sv", "tr", "id"] {
+            #expect(Units.byLanguage[lang] != nil, "\(lang) の単位が無い")
+        }
+    }
 }

@@ -32,9 +32,9 @@ public struct DurationEditor: View {
     public var body: some View {
         VStack(spacing: spacing) {
             HStack(spacing: spacing) {
-                StepButton(title: "−60", unit: "s", size: buttonSize, fill: minusFill, text: minusText) { change(by: -DurationRule.coarseStep) }
+                StepButton(title: "−60", unit: TimeText.secondUnit(), size: buttonSize, fill: minusFill, text: minusText) { change(by: -DurationRule.coarseStep) }
                     .accessibilityIdentifier("minus60")
-                StepButton(title: "+60", unit: "s", size: buttonSize, fill: plusFill, text: plusText) { change(by: DurationRule.coarseStep) }
+                StepButton(title: "+60", unit: TimeText.secondUnit(), size: buttonSize, fill: plusFill, text: plusText) { change(by: DurationRule.coarseStep) }
                     .accessibilityIdentifier("plus60")
             }
 
@@ -42,9 +42,9 @@ public struct DurationEditor: View {
                 .accessibilityIdentifier("value")
 
             HStack(spacing: spacing) {
-                StepButton(title: "−10", unit: "s", size: buttonSize, fill: minusFill, text: minusText) { change(by: -DurationRule.fineStep) }
+                StepButton(title: "−10", unit: TimeText.secondUnit(), size: buttonSize, fill: minusFill, text: minusText) { change(by: -DurationRule.fineStep) }
                     .accessibilityIdentifier("minus10")
-                StepButton(title: "+10", unit: "s", size: buttonSize, fill: plusFill, text: plusText) { change(by: DurationRule.fineStep) }
+                StepButton(title: "+10", unit: TimeText.secondUnit(), size: buttonSize, fill: plusFill, text: plusText) { change(by: DurationRule.fineStep) }
                     .accessibilityIdentifier("plus10")
             }
         }

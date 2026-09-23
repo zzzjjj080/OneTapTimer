@@ -199,8 +199,22 @@
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				ja,
 				en,
+				ja,
+				"zh-Hans",
+				"zh-Hant",
+				ko,
+				es,
+				fr,
+				de,
+				it,
+				"pt-BR",
+				ru,
+				ar,
+				nl,
+				sv,
+				tr,
+				id,
 				Base,
 			);
 			mainGroup = A10000000000000000000002;
@@ -306,8 +320,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				DEVELOPMENT_TEAM = A7WA598R44;
-				CURRENT_PROJECT_VERSION = 6;
-				MARKETING_VERSION = 1.0.2;
+				CURRENT_PROJECT_VERSION = 7;
+				MARKETING_VERSION = 1.1;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Phone-Info.plist";
 				CODE_SIGN_ENTITLEMENTS = OneTapTimerPhone/OneTapTimerPhone.entitlements;
@@ -337,8 +351,8 @@
 				CODE_SIGN_STYLE = Manual;
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				DEVELOPMENT_TEAM = A7WA598R44;
-				CURRENT_PROJECT_VERSION = 6;
-				MARKETING_VERSION = 1.0.2;
+				CURRENT_PROJECT_VERSION = 7;
+				MARKETING_VERSION = 1.1;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Phone-Info.plist";
 				CODE_SIGN_ENTITLEMENTS = OneTapTimerPhone/OneTapTimerPhone.entitlements;
@@ -369,8 +383,8 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				DEVELOPMENT_TEAM = A7WA598R44;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CURRENT_PROJECT_VERSION = 6;
-				MARKETING_VERSION = 1.0.2;
+				CURRENT_PROJECT_VERSION = 7;
+				MARKETING_VERSION = 1.1;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Watch-Info.plist";
 				CODE_SIGN_ENTITLEMENTS = OneTapTimer/OneTapTimer.entitlements;
@@ -399,8 +413,8 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				DEVELOPMENT_TEAM = A7WA598R44;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CURRENT_PROJECT_VERSION = 6;
-				MARKETING_VERSION = 1.0.2;
+				CURRENT_PROJECT_VERSION = 7;
+				MARKETING_VERSION = 1.1;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Watch-Info.plist";
 				CODE_SIGN_ENTITLEMENTS = OneTapTimer/OneTapTimer.entitlements;
@@ -429,8 +443,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				DEVELOPMENT_TEAM = A7WA598R44;
-				CURRENT_PROJECT_VERSION = 6;
-				MARKETING_VERSION = 1.0.2;
+				CURRENT_PROJECT_VERSION = 7;
+				MARKETING_VERSION = 1.1;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Widget-Info.plist";
 				CODE_SIGN_ENTITLEMENTS = OneTapTimerWidget/OneTapTimerWidget.entitlements;
@@ -458,8 +472,8 @@
 				CODE_SIGN_STYLE = Manual;
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				DEVELOPMENT_TEAM = A7WA598R44;
-				CURRENT_PROJECT_VERSION = 6;
-				MARKETING_VERSION = 1.0.2;
+				CURRENT_PROJECT_VERSION = 7;
+				MARKETING_VERSION = 1.1;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Widget-Info.plist";
 				CODE_SIGN_ENTITLEMENTS = OneTapTimerWidget/OneTapTimerWidget.entitlements;
