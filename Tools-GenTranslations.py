@@ -45,6 +45,12 @@ CATALOGS: dict[str, dict[str, object]] = {
         "タップで始める": plain("タップで始める"), "時間を変える": plain("時間を変える"),
         "一時停止": plain("一時停止"), "再開": plain("再開"),
         "色": plain("色"), "完了": plain("完了"),
+        # 投げ銭（設定の ♡）
+        "気に入ったら": plain("気に入ったら"), "コーヒーを奢る": plain("コーヒーを奢る"),
+        "ありがとうございます": plain("ありがとうございます"),
+        "うまくいきませんでした": plain("うまくいきませんでした"),
+        "いまは受け付けられません": plain("いまは受け付けられません"),
+        "閉じる": plain("閉じる"), "この端末で %lld": plain("この端末で %lld"),
     },
     "OneTapTimer/OneTapTimer/Localizable.xcstrings": {
         "キャンセル": plain("キャンセル"),

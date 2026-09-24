@@ -14,6 +14,9 @@ struct SettingsView: View {
     /// 秒で持って by: 1 にすると、目盛りの触覚が1秒ごとに鳴って、回しても値が動かないように感じる
     @State private var crown: Double = DurationRule.crown(fromSeconds: DurationRule.standard)
     @FocusState private var focused: Bool
+    /// 投げ銭。**設定を開いたときに作るだけ**で、押されるまで App Store へは問い合わせない
+    @State private var tipJar = TipJar(productID: TipJar.oneTapTimer)
+    @State private var showTip = false
 
     private var screen: CGSize { WKInterfaceDevice.current().screenBounds.size }
     private var h: CGFloat { screen.height }
@@ -49,7 +52,8 @@ struct SettingsView: View {
                 SettingsFooter(theme: runner.themeHex, number: runner.theme,
                                height: buttonSize.height, spacing: gap,
                                onColor: { runner.cycleTheme() },
-                               onDone: { runner.apply(duration: draft) })
+                               onDone: { runner.apply(duration: draft) },
+                               onTip: { showTip = true })
                     .padding(.top, gap * 0.4)
 
                 // **いちばん下に、入っている版の印**（引き継ぎ書 4-145）
@@ -77,10 +81,17 @@ struct SettingsView: View {
             let s = DurationRule.seconds(fromCrown: v)
             if s != draft { draft = s }
         }
+        .sheet(isPresented: $showTip) {
+            TipSheet(tipJar: tipJar, theme: runner.themeHex) { showTip = false }
+        }
         .onAppear {
             draft = runner.duration
             crown = DurationRule.crown(fromSeconds: runner.duration)
             focused = true
+            #if DEBUG
+            // 撮影用。OTT_STATE=tip で投げ銭の画面まで開く
+            if ProcessInfo.processInfo.environment["OTT_STATE"] == "tip" { showTip = true }
+            #endif
         }
     }
 }

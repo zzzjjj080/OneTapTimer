@@ -6,6 +6,8 @@ import OneTapTimerUI
 struct PhoneSettingsSheet: View {
     @Environment(Runner.self) private var runner
     @State private var draft: Int = DurationRule.standard
+    @State private var tipJar = TipJar(productID: TipJar.oneTapTimer)
+    @State private var showTip = false
 
     var body: some View {
         VStack(spacing: 24) {
@@ -18,7 +20,8 @@ struct PhoneSettingsSheet: View {
             SettingsFooter(theme: runner.themeHex, number: runner.theme,
                            height: 58, spacing: 14,
                            onColor: { runner.cycleTheme() },
-                           onDone: { runner.apply(duration: draft) })
+                           onDone: { runner.apply(duration: draft) },
+                           onTip: { showTip = true })
                 .padding(.horizontal, 20)
 
             Text(BuildStamp.text)
@@ -28,6 +31,16 @@ struct PhoneSettingsSheet: View {
                 .padding(.bottom, 16)
         }
         .padding(.top, 28)
-        .onAppear { draft = runner.duration }
+        .sheet(isPresented: $showTip) {
+            TipSheet(tipJar: tipJar, theme: runner.themeHex) { showTip = false }
+                .presentationDetents([.height(240)])
+        }
+        .onAppear {
+            draft = runner.duration
+            #if DEBUG
+            // 撮影用。OTT_STATE=tip で投げ銭の画面まで開く（審査用スクショはこれを使う）
+            if ProcessInfo.processInfo.environment["OTT_STATE"] == "tip" { showTip = true }
+            #endif
+        }
     }
 }

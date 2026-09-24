@@ -27,7 +27,7 @@ echo "   版 $(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$A
 printf "   Watch: "; ls "$A/Watch"
 printf "   拡張: "; ls "$A/Watch/OneTapTimer Watch App.app/PlugIns"
 printf "   App Group: "; codesign -d --entitlements :- "$A/Watch/OneTapTimer Watch App.app" 2>/dev/null | grep -c "group.com.zzzjjj080.OneTapTimer"
-printf "   確認用の入口（0 であること）: "; strings "$A/Watch/OneTapTimer Watch App.app/OneTapTimer Watch App" | grep -cE "OTT_STATE|OTT_SKIP_PERMISSION" || true
+printf "   確認用の入口（0 であること）: "; strings "$A/Watch/OneTapTimer Watch App.app/OneTapTimer Watch App" | grep -cE "OTT_STATE|OTT_SKIP_PERMISSION|OTT_TIP_SAMPLE|OTTCrownLeft" || true
 
 if [ "${1:-}" = "--archive-only" ]; then echo "✅ アーカイブまで: $DIR/OneTapTimer.xcarchive"; exit 0; fi
 
