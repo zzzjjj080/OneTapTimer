@@ -5,8 +5,10 @@ cd "$(dirname "$0")"
 ROOT="$PWD"
 
 
+# Wi-Fi 越しだと `connected` ではなく `available (paired)` で出る。どちらでも入る（引き継ぎ書 4-151）
 find_phone() {
-  xcrun devicectl list devices 2>/dev/null | grep '(iPhone' | grep ' connected ' | grep -v 'no DDI' | head -1 || true
+  xcrun devicectl list devices 2>/dev/null | grep '(iPhone' \
+    | grep -E ' connected | available \(paired\) ' | grep -v 'no DDI' | head -1 || true
 }
 LINE=$(find_phone)
 if [ -z "$LINE" ]; then
