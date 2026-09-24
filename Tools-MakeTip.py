@@ -66,9 +66,10 @@ def main() -> int:
     if STATUS:
         _, s = api("get", f"/v2/inAppPurchases/{iap}")
         print("状態:", s["data"]["attributes"].get("state"))
-        for what in ("inAppPurchaseLocalizations", "iapPriceSchedule",
-                     "inAppPurchaseAvailability", "appStoreReviewScreenshot"):
-            _, r = api("get", f"/v2/inAppPurchases/{iap}/{what}?limit=3")
+        # 1つしか無い関係に `limit` を付けると 400 になる（文言・価格の複数形だけ付けられる）
+        for what, many in (("inAppPurchaseLocalizations", True), ("iapPriceSchedule", False),
+                           ("inAppPurchaseAvailability", False), ("appStoreReviewScreenshot", False)):
+            _, r = api("get", f"/v2/inAppPurchases/{iap}/{what}" + ("?limit=3" if many else ""))
             d = r.get("data")
             print(f"  {what}: {len(d) if isinstance(d, list) else ('あり' if d else 'なし')}")
         return 0
