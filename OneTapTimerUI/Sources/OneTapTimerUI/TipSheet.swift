@@ -85,7 +85,9 @@ public struct TipSheet: View {
                 VStack(spacing: 1) {
                     Text("コーヒーを奢る", bundle: .module)
                         .font(.system(size: 15, weight: .bold))
-                    if let price = tipJar.displayPrice ?? samplePrice {
+                    // 撮影用の見本があるときはそちらを優先する（DEBUG だけ。
+                    // シミュレータの地域で $0.99 になったりして、画像の通貨がばらつくため）
+                    if let price = samplePrice ?? tipJar.displayPrice {
                         Text(price)
                             .font(.system(size: 12, weight: .semibold))
                             .monospacedDigit()

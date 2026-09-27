@@ -149,6 +149,9 @@ public struct DrainFace: View {
                 }
             }
             .font(.system(size: subSize, weight: engine.isPaused ? .heavy : .semibold, design: fontDesign))
+            // 大きい字（S4）だと `0:58` が横に収まらず切れていた
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
             .foregroundStyle(engine.isPaused ? skin.ink : skin.inkDim)
             .accessibilityIdentifier("sub")
         }

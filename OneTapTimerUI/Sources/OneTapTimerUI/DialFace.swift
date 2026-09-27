@@ -41,9 +41,15 @@ public struct DialFace: View {
         }
     }
 
-    /// 数字の大きさ。**絵と並べるときは小さく、数字だけなら大きく**
+    /// 数字の大きさ。**絵と並べるときは小さく、数字だけなら大きく。**
+    /// 単位を添えるときは、単位のぶん横に要るので少し小さくする（`90秒` が切れていた）
     private var numberSize: CGFloat {
-        let base: CGFloat = design.dialContent == .markAndNumber ? 0.36 : 0.52
+        let base: CGFloat
+        switch design.dialContent {
+        case .markAndNumber: base = 0.36
+        case .numberAndUnit: base = 0.40
+        default: base = 0.52
+        }
         return diameter * base * design.dialSize.ratio
     }
 

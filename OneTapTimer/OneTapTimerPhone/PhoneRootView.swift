@@ -22,8 +22,11 @@ struct PhoneRootView: View {
             }
             .onAppear {
                 #if DEBUG
+                let env = ProcessInfo.processInfo.environment
                 // 撮影用。OTT_STATE=tip で投げ銭の画面まで開く（審査用スクショはこれを使う）
-                if ProcessInfo.processInfo.environment["OTT_STATE"] == "tip" { showTip = true }
+                if env["OTT_STATE"] == "tip" { showTip = true }
+                // 撮影用。OTT_DESIGN="Y2 C5 …" で見た目を決め打ちにする
+                if let text = env["OTT_DESIGN"] { runner.apply(design: FaceDesign(text: text)) }
                 #endif
             }
             .preferredColorScheme(.dark)

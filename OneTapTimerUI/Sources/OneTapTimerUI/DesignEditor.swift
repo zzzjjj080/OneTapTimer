@@ -29,6 +29,7 @@ public struct DesignEditor: View {
             // **貼り付けたまま動かす。** 下を選んでもここは隠れない
             PreviewBar(design: design, duration: duration)
 
+            ScrollViewReader { scroll in
             ScrollView {
                 VStack(spacing: 22) {
                     section("文字盤")
@@ -81,12 +82,22 @@ public struct DesignEditor: View {
                 }
                 .padding(.top, 16)
             }
+            .onAppear {
+                #if DEBUG
+                // 撮影用。**リリース構成には入らない**（`OTT_SHOT=face` でアプリの画面の並びまで送る）
+                if ProcessInfo.processInfo.environment["OTT_SHOT"] == "face" {
+                    scroll.scrollTo("アプリの画面", anchor: .top)
+                }
+                #endif
+            }
+            }
         }
         .background(Color(hex: PaletteHex.ground).ignoresSafeArea())
     }
 
     private func section(_ title: LocalizedStringKey) -> some View {
         Text(title, bundle: .module)
+            .id(title == "アプリの画面" ? "アプリの画面" : "文字盤")
             .font(.system(size: 13, weight: .bold))
             .tracking(1)
             .foregroundStyle(Color(hex: design.theme.liquidTop).opacity(0.9))

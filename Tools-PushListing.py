@@ -24,8 +24,11 @@ from pathlib import Path
 ROOT = Path(__file__).parent
 ASC = str(ROOT / "Tools-ASC.py")
 APP_ID = "6811255797"
-SHOTS = {"APP_WATCH_SERIES_10": ("watch", 4), "APP_IPHONE_67": ("phone", 4)}
-ORDER = ["running", "paused", "done", "settings"]
+# 画像の並び。**Watch と iPhone で中身が違う**（1.3 から iPhone は見た目を決める画面だけ）
+SHOTS = {
+    "APP_WATCH_SERIES_10": ("watch", ["running", "paused", "done", "settings"]),
+    "APP_IPHONE_67": ("phone", ["dial", "face", "looks", "tip"]),
+}
 
 
 def api(method: str, path: str, body: dict | None = None) -> dict:
@@ -98,9 +101,9 @@ def main() -> int:
             folder = ROOT / "store" if locale == "ja" else ROOT / "store/en"
             # 一時フォルダは実行ごとに分ける（同じ道具を2つ走らせると画像を取り合って落ちる）
             tmp = Path(tempfile.mkdtemp(prefix="ott-shots-"))
-            for display, (kind, _) in SHOTS.items():
+            for display, (kind, order) in SHOTS.items():
                 tmp.mkdir(exist_ok=True)
-                for i, state in enumerate(ORDER, start=1):
+                for i, state in enumerate(order, start=1):
                     (tmp / f"{i}.png").write_bytes((folder / f"{kind}-{state}.png").read_bytes())
                 subprocess.run([str(ROOT / "Tools-UploadScreenshots.py"), have_ver[locale], display, str(tmp)])
                 for f in tmp.iterdir():
