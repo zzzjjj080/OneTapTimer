@@ -28,7 +28,7 @@ struct RunView: View {
 
             // 上の中央。システムの時刻は右上に出るので、真ん中は空いている
             // 押せる余白ぶん外へ寄せて置き、見た目の位置は変えない
-            SettingButton(skin: Skin.of(runner.engine, at: .now, theme: runner.themeHex),
+            SettingButton(skin: Skin.of(runner.engine, at: .now, design: runner.design),
                           size: settingsSize, hitPadding: hitPadding) {
                 runner.openSettings()
             }
@@ -36,7 +36,7 @@ struct RunView: View {
 
             // 左上。**一時停止**（あまり使わないので隅に）。角の丸みに掛からないよう少し内側へ
             if !runner.engine.isFinished {
-                PauseButton(skin: Skin.of(runner.engine, at: .now, theme: runner.themeHex),
+                PauseButton(skin: Skin.of(runner.engine, at: .now, design: runner.design),
                             isPaused: runner.engine.isPaused, size: pauseSize, hitPadding: hitPadding) {
                     runner.togglePause()
                 }
@@ -109,7 +109,7 @@ struct RunView: View {
     private var face: some View {
         if dim {
             TimelineView(.periodic(from: .now, by: 1)) { t in
-                DrainFace(engine: runner.engine, now: t.date, theme: runner.themeHex, metrics: .watch)
+                DrainFace(engine: runner.engine, now: t.date, design: runner.design, metrics: .watch)
             }
         } else {
             // **毎秒2回だけ描き直す。** 30fps で描いていたら、前面を留めるセッションが
@@ -117,7 +117,7 @@ struct RunView: View {
             // CPU を使い続けるとシステムがセッションを取り消すことがある）。
             // 90秒で水位が動くのは1秒に1%ほどなので、2回で見た目は変わらない
             TimelineView(.periodic(from: .now, by: 0.5)) { t in
-                DrainFace(engine: runner.engine, now: t.date, theme: runner.themeHex, metrics: .watch)
+                DrainFace(engine: runner.engine, now: t.date, design: runner.design, metrics: .watch)
             }
         }
     }

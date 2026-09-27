@@ -143,25 +143,22 @@ struct StepButton: View {
 }
 
 
-/// 設定画面の下段。**色の見本（丸）と「完了」（横長）。**
+/// 設定画面の下段。**「完了」（横長）と ♡（投げ銭）。**
 ///
-/// 色は押すたびに次の組へ。番号を丸の中に出すので、いま何番かが分かる。
-/// 完了は残り幅いっぱいにして、いちばん押しやすい場所にする。
+/// **1.3 で色ボタンを外した。** 見た目は iPhone アプリで決める（Watch の画面は狭いので操作を増やさない）。
+/// 完了は幅いっぱいにして、いちばん押しやすい場所にする。
 public struct SettingsFooter: View {
     public var theme: ThemeHex
-    public var number: Int
     public var height: CGFloat
     public var spacing: CGFloat
-    public var onColor: () -> Void
     public var onDone: () -> Void
     /// ♡（投げ銭）。渡さなければ出さない
     public var onTip: (() -> Void)?
 
-    public init(theme: ThemeHex, number: Int, height: CGFloat, spacing: CGFloat,
-                onColor: @escaping () -> Void, onDone: @escaping () -> Void,
-                onTip: (() -> Void)? = nil) {
-        self.theme = theme; self.number = number; self.height = height; self.spacing = spacing
-        self.onColor = onColor; self.onDone = onDone; self.onTip = onTip
+    public init(theme: ThemeHex, height: CGFloat, spacing: CGFloat,
+                onDone: @escaping () -> Void, onTip: (() -> Void)? = nil) {
+        self.theme = theme; self.height = height; self.spacing = spacing
+        self.onDone = onDone; self.onTip = onTip
     }
 
     private var fill: LinearGradient {
@@ -171,21 +168,6 @@ public struct SettingsFooter: View {
 
     public var body: some View {
         HStack(spacing: spacing) {
-            Button(action: onColor) {
-                ZStack {
-                    Circle().fill(fill)
-                    Text("\(number)")
-                        .font(.system(size: height * 0.44, weight: .heavy, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundStyle(Color(hex: PaletteHex.ground))
-                }
-                .frame(width: height, height: height)
-                .contentShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text("色", bundle: .module))
-            .accessibilityIdentifier("theme")
-
             Button(action: onDone) {
                 Text("完了", bundle: .module)
                     .font(.system(size: height * 0.4, weight: .bold))

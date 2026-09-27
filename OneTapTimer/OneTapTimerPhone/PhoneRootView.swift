@@ -2,67 +2,29 @@ import SwiftUI
 import OneTapTimerCore
 import OneTapTimerUI
 
+/// iPhone の画面。**1.3 からタイマーは無い。見た目を決める器。**
+///
+/// 選んだ瞬間に App Group へ保存し、`DesignSync` で Apple Watch へ送る。
+/// 届くのは Watch アプリが次に起きたとき（すぐとは限らない）。
 struct PhoneRootView: View {
     @Environment(Runner.self) private var runner
+    @State private var tipJar = TipJar(productID: TipJar.oneTapTimer)
+    @State private var showTip = false
 
     var body: some View {
-        ZStack(alignment: .top) {
-            TimelineView(.animation(minimumInterval: 1.0 / 30, paused: runner.engine.isFinished || runner.engine.isPaused)) { t in
-                DrainFace(engine: runner.engine, now: t.date, theme: runner.themeHex, metrics: .phone)
+        DesignEditor(design: Binding(get: { runner.design },
+                                     set: { runner.apply(design: $0, send: true) }),
+                     onTip: { showTip = true })
+            .sheet(isPresented: $showTip) {
+                TipSheet(tipJar: tipJar, theme: runner.themeHex) { showTip = false }
+                    .presentationDetents([.height(240)])
             }
-            .ignoresSafeArea()
-            .contentShape(Rectangle())
-            .onTapGesture { runner.startAgain() }
-            .accessibilityIdentifier("face")
-
-            // 押せる余白（12pt）ぶん外へ寄せて置き、見た目の位置は変えない
-            SettingButton(skin: Skin.of(runner.engine, at: .now, theme: runner.themeHex),
-                          size: 66, hitPadding: 12) {
-                runner.openSettings()
+            .onAppear {
+                #if DEBUG
+                // 撮影用。OTT_STATE=tip で投げ銭の画面まで開く（審査用スクショはこれを使う）
+                if ProcessInfo.processInfo.environment["OTT_STATE"] == "tip" { showTip = true }
+                #endif
             }
-            .padding(.top, 8 - 12)
-
-            if !runner.engine.isFinished {
-                PauseButton(skin: Skin.of(runner.engine, at: .now, theme: runner.themeHex),
-                            isPaused: runner.engine.isPaused, size: 60, hitPadding: 12) {
-                    runner.togglePause()
-                }
-                .padding(.leading, 20 - 12)
-                .padding(.top, 8 + (66 - 60) / 2 - 12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-        .sheet(isPresented: Binding(get: { runner.screen == .settings },
-                                    set: { if !$0 { runner.closeSettings() } })) {
-            PhoneSettingsSheet()
-                .environment(runner)
-                .presentationDetents([.medium, .large])
-                .presentationBackground(Color(hex: PaletteHex.ground))
-        }
-        .task {
-            if !skipsPermissionForChecking {
-                UNUserNotificationCenter.current().delegate = runner.gate
-                await runner.notifier.requestPermission()
-            }
-            #if DEBUG
-            // activate() より後に効かせる（先に入れても新しいタイマーで上書きされる）
-            if let spec = ProcessInfo.processInfo.environment["OTT_STATE"] {
-                try? await Task.sleep(for: .milliseconds(400))
-                runner.applyDebugState(spec)
-            }
-            #endif
-        }
-        .statusBarHidden(false)
-        .preferredColorScheme(.dark)
-    }
-
-    private var skipsPermissionForChecking: Bool {
-        #if DEBUG
-        ProcessInfo.processInfo.environment["OTT_SKIP_PERMISSION"] == "1"
-        #else
-        false
-        #endif
+            .preferredColorScheme(.dark)
     }
 }
-
-import UserNotifications

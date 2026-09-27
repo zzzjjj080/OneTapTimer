@@ -130,16 +130,25 @@ struct RunnerTests {
         #expect(s.scheduled.last == t0 + 100)
     }
 
-    @Test func 色は順繰りで保存される() {
+    @Test func 見た目は保存されて次に開いたときも同じ() {
         let d = fresh()
         let r = Runner(haptics: SpyHaptics(), notifier: SpyScheduler(), defaults: d, now: t0)
-        #expect(r.theme == 1)
-        for _ in 0..<10 { r.cycleTheme() }
-        #expect(r.theme == 1)
-        r.cycleTheme()
-        #expect(r.theme == 2)
+        #expect(r.design == FaceDesign.standard)
+
+        r.apply(design: FaceDesign(style: .ring, color: .pink, digits: .clockOnly), at: t0)
+        #expect(r.design.color == .pink)
+
         let again = Runner(haptics: SpyHaptics(), notifier: SpyScheduler(), defaults: d, now: t0)
-        #expect(again.theme == 2)
+        #expect(again.design.style == .ring)
+        #expect(again.design.digits == .clockOnly)
+    }
+
+    @Test func 色だけ選べた頃の設定はその色の見た目として読む() {
+        let d = fresh()
+        d.set(5, forKey: SharedStore.themeKey)          // 1.2 までの「色の組」
+        let r = Runner(haptics: SpyHaptics(), notifier: SpyScheduler(), defaults: d, now: t0)
+        #expect(r.design.color == .pink)                // C5
+        #expect(r.design.style == .liquid)              // ほかは既定
     }
 
     @Test func 設定を決めたら保存されて次回もその長さ() {

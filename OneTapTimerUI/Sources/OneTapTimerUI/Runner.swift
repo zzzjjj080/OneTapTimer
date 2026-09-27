@@ -31,9 +31,9 @@ public final class Runner {
     public private(set) var engine: TimerEngine
     /// 設定してある長さ（秒）。次に始めるときの値
     public private(set) var duration: Int
-    /// 色の組の番号（1〜10）
-    public private(set) var theme: Int
-    public var themeHex: ThemeHex { ThemeHex.at(theme) }
+    /// 画面の見た目ひと組。**決めるのは iPhone だけ**（Watch へは `DesignSync` で届く）
+    public private(set) var design: FaceDesign
+    public var themeHex: ThemeHex { design.theme }
 
     /// 腕を下ろして画面が暗くなった時刻。`.background` が来たときに、
     /// **クラウンで自分で出たのか、画面が消えただけなのか**を見分けるのに使う。
@@ -80,8 +80,7 @@ public final class Runner {
         let saved = defaults.integer(forKey: Self.durationKey)
         let d = saved == 0 ? DurationRule.standard : DurationRule.clamp(saved)
         duration = d
-        let t = defaults.integer(forKey: SharedStore.themeKey)
-        theme = (1...ThemeHex.all.count).contains(t) ? t : 1
+        design = SharedStore.design(defaults)
 
         // 前回の続き。プロセスが落とされていても、終わる時刻はここから戻る
         if let data = defaults.data(forKey: Self.engineKey),
@@ -226,11 +225,14 @@ public final class Runner {
         persist()
     }
 
-    /// 色の組を次へ（10 の次は 1）。保存して、文字盤にも反映させる
-    public func cycleTheme() {
-        theme = ThemeHex.next(after: theme)
-        defaults.set(theme, forKey: SharedStore.themeKey)
-        haptics.stepped(up: true)
+    /// 見た目を入れ替える。iPhone で決めたとき、または相手から届いたときに呼ぶ。
+    /// **保存と文字盤の描き直しまでここでやる**（呼び先で忘れると、文字盤だけ前の色のまま残る）
+    public func apply(design new: FaceDesign, at date: Date = .now, send: Bool = false) {
+        design = new
+        SharedStore.save(new, at: date, to: defaults)
+        #if canImport(WatchConnectivity)
+        if send { DesignSync.shared.send(new, at: date) }
+        #endif
         reloadComplication()
     }
 

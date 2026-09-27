@@ -3,7 +3,9 @@ import WatchKit
 import OneTapTimerCore
 import OneTapTimerUI
 
-/// 時間を変える画面。**±60s ／ 値 ／ ±10s ／ 色と完了。**
+/// 時間を変える画面。**±60s ／ 値 ／ ±10s ／ 完了。**
+///
+/// **見た目（色・形・数字）はここでは変えられない。** iPhone アプリで決めて、届くのを待つ（1.3 から）。
 ///
 /// Digital Crown は1目盛りが10秒。やめるときはクラウンを押して文字盤へ戻る。
 struct SettingsView: View {
@@ -49,9 +51,8 @@ struct SettingsView: View {
                                    crown = DurationRule.crown(fromSeconds: draft)
                                })
 
-                SettingsFooter(theme: runner.themeHex, number: runner.theme,
+                SettingsFooter(theme: runner.themeHex,
                                height: buttonSize.height, spacing: gap,
-                               onColor: { runner.cycleTheme() },
                                onDone: { runner.apply(duration: draft) },
                                onTip: { showTip = true })
                     .padding(.top, gap * 0.4)

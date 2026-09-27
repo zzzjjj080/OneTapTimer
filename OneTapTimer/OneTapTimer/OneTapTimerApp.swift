@@ -1,5 +1,6 @@
 import SwiftUI
 import UserNotifications
+import OneTapTimerCore
 import OneTapTimerUI
 
 @main
@@ -31,6 +32,15 @@ struct OneTapTimerApp: App {
         WindowGroup {
             RootView()
                 .environment(runner)
+                // **iPhone で決めた見た目を受け取る**（1.3 から）。Watch 側に変える操作は無い。
+                // 受け取れるのはアプリが起きている間だけ。次に開いたときには必ず最新になる
+                .task {
+                    // アプリと同じだけ生きるので、そのまま捕まえてよい
+                    let r = runner
+                    DesignSync.shared.start { design in
+                        Task { @MainActor in r.apply(design: design) }
+                    }
+                }
         }
         // **3つを区別する。**
         // active     … 見ている。開いた瞬間ならここで走り出す
