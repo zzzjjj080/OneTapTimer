@@ -36,9 +36,15 @@ public struct DrainFace: View {
     public var now: Date
     public var design: FaceDesign
     public var metrics: FaceMetrics
+    /// 減り方（水・輪・棒）を描くか。**選択肢の見本で「数字だけ」を見せるときに false**
+    public var showsMeter: Bool
+    /// 数字を描くか。**「形だけ」を見せるときに false**
+    public var showsDigits: Bool
 
-    public init(engine: TimerEngine, now: Date, design: FaceDesign, metrics: FaceMetrics) {
+    public init(engine: TimerEngine, now: Date, design: FaceDesign, metrics: FaceMetrics,
+                showsMeter: Bool = true, showsDigits: Bool = true) {
         self.engine = engine; self.now = now; self.design = design; self.metrics = metrics
+        self.showsMeter = showsMeter; self.showsDigits = showsDigits
     }
 
     private var skin: Skin { Skin.of(engine, at: now, design: design) }
@@ -58,14 +64,14 @@ public struct DrainFace: View {
         ZStack {
             skin.ground
 
-            if !isDone {
+            if !isDone && showsMeter {
                 Meter(fraction: fraction, skin: skin, design: design)
             }
 
-            digits
+            if showsDigits { digits }
 
             // 下端の案内
-            if isDone {
+            if isDone && showsDigits {
                 VStack {
                     Spacer()
                     Text("タップで始める", bundle: .module)

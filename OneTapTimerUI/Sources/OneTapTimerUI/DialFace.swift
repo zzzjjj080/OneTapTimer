@@ -57,7 +57,8 @@ public struct DialFace: View {
             if design.dialTint == .filled {
                 Circle().fill(fullColor ? accent : Color.white)
             }
-            ring
+            DialRingArt(ring: design.dialRing, color: fullColor ? accent : .white,
+                        diameter: diameter, dimmed: !fullColor)
             VStack(spacing: -diameter * 0.02) {
                 if design.dialContent.showsMark {
                     Image(systemName: design.dialMark.symbol)
@@ -85,20 +86,35 @@ public struct DialFace: View {
         .frame(width: diameter, height: diameter)
     }
 
-    /// R 輪。**細いと文字盤に埋もれる**ので、実寸（直径42pt）で見て細い＝2pt・太い＝4pt にした
-    @ViewBuilder
-    private var ring: some View {
-        let color = fullColor ? accent.opacity(0.85) : Color.white.opacity(0.55)
-        switch design.dialRing {
+}
+
+/// R 輪だけ。**選択肢の見本では、輪のほかに何も描かない**
+/// （2026-09-27 本人指示。数字や絵まで出ていると、どれを選んでいるのか分からない）。
+///
+/// 太さは実寸（直径42pt）で見て、細い＝2pt・太い＝4pt になる比にしてある。
+public struct DialRingArt: View {
+    public var ring: DialRing
+    public var color: Color
+    public var diameter: CGFloat
+    public var dimmed: Bool
+
+    public init(ring: DialRing, color: Color, diameter: CGFloat, dimmed: Bool = false) {
+        self.ring = ring; self.color = color; self.diameter = diameter; self.dimmed = dimmed
+    }
+
+    private var stroke: Color { color.opacity(dimmed ? 0.55 : 0.85) }
+
+    public var body: some View {
+        switch ring {
         case .none:
             EmptyView()
         case .thin:
-            Circle().strokeBorder(color, lineWidth: diameter * 0.048)
+            Circle().strokeBorder(stroke, lineWidth: diameter * 0.048)
         case .thick:
-            Circle().strokeBorder(color, lineWidth: diameter * 0.095)
+            Circle().strokeBorder(stroke, lineWidth: diameter * 0.095)
         case .dotted:
-            Circle().strokeBorder(color, style: StrokeStyle(lineWidth: diameter * 0.07,
-                                                            dash: [diameter * 0.09, diameter * 0.07]))
+            Circle().strokeBorder(stroke, style: StrokeStyle(lineWidth: diameter * 0.07,
+                                                             dash: [diameter * 0.09, diameter * 0.07]))
         }
     }
 }

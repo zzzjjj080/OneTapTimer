@@ -34,23 +34,23 @@ public struct DesignEditor: View {
                     section("文字盤")
                     // **色は文字盤とアプリで共通。** 両方の並びに出す
                     // （文字盤の所に無いと「色は変えられない」と見える。2026-09-27 本人の指摘）
-                    row("色", \.color, dial: true)
-                    row("中身", \.dialContent)
-                    row("絵", \.dialMark)
-                    row("輪", \.dialRing)
-                    row("色の付け方", \.dialTint)
-                    row("大きさ", \.dialSize)
-                    row("書体", \.dialTypeface)
+                    row("色", \.color, art: .swatch)
+                    row("中身", \.dialContent, art: .dial)
+                    row("絵", \.dialMark, art: .symbol)
+                    row("輪", \.dialRing, art: .ring)
+                    row("色の付け方", \.dialTint, art: .dial)
+                    row("大きさ", \.dialSize, art: .dialNumber)
+                    row("書体", \.dialTypeface, art: .dialNumber)
 
                     section("アプリの画面")
-                    row("減り方", \.style)
-                    row("色", \.color)
-                    row("数字", \.digits)
-                    row("大きさ", \.size)
-                    row("書体", \.typeface)
-                    row("文字の太さ", \.weight)
-                    row("縁取り", \.outline)
-                    row("置き場所", \.place)
+                    row("減り方", \.style, art: .meter)
+                    row("色", \.color, art: .swatch)
+                    row("数字", \.digits, art: .digits)
+                    row("大きさ", \.size, art: .digits)
+                    row("書体", \.typeface, art: .digits)
+                    row("文字の太さ", \.weight, art: .digits)
+                    row("縁取り", \.outline, art: .face)
+                    row("置き場所", \.place, art: .placement)
 
                     Button { design = .standard } label: {
                         Text("はじめに戻す", bundle: .module)
@@ -95,11 +95,11 @@ public struct DesignEditor: View {
             .padding(.top, 6)
     }
 
-    /// 1種類ぶんの横並び。**見本はその項目だけを差し替えたもの**（ほかはいまの設定のまま）。
-    /// `dial` を渡すと、その並びの見本を文字盤の丸で描く（色のように両方に出る項目のため）
+    /// 1種類ぶんの横並び。**見本はその項目だけを描く**（2026-09-27 本人指示。
+    /// 色なら色だけ、絵なら絵だけ。ほかの要素まで出ていると、どれを選んでいるのか分からない）
     private func row<T: NumberedChoice>(_ title: LocalizedStringKey,
                                         _ key: WritableKeyPath<FaceDesign, T>,
-                                        dial: Bool? = nil) -> some View {
+                                        art: ChipArt) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title, bundle: .module)
                 .font(.system(size: 14, weight: .semibold))
@@ -109,9 +109,8 @@ public struct DesignEditor: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 10) {
                     ForEach(T.allCases) { choice in
-                        Chip(design: changing(key, to: choice), code: choice.code,
-                             chosen: design[keyPath: key] == choice,
-                             dial: dial ?? Self.isDial(key), duration: duration) {
+                        Chip(design: changing(key, to: choice), code: choice.code, art: art,
+                             chosen: design[keyPath: key] == choice, duration: duration) {
                             design[keyPath: key] = choice
                         }
                     }
@@ -119,13 +118,6 @@ public struct DesignEditor: View {
                 .padding(.horizontal, 16)
             }
         }
-    }
-
-    /// 文字盤の項目かどうか。見本の絵を丸にするか、画面にするかを決める
-    private static func isDial<T>(_ key: WritableKeyPath<FaceDesign, T>) -> Bool {
-        [\FaceDesign.dialContent as PartialKeyPath<FaceDesign>, \FaceDesign.dialMark,
-         \FaceDesign.dialRing, \FaceDesign.dialTint, \FaceDesign.dialSize,
-         \FaceDesign.dialTypeface].contains(key as PartialKeyPath<FaceDesign>)
     }
 
     /// いまの設定の、その項目だけを差し替えたもの
@@ -189,53 +181,76 @@ private struct PreviewBar: View {
     }
 }
 
-/// 選択肢ひとつ。**小さな見本と番号。**
+/// 見本に何を描くか。**選んでいる項目だけを描く**（2026-09-27 本人指示）
+enum ChipArt {
+    /// 文字盤の丸ごと（中身・色の付け方）
+    case dial
+    /// 絵だけ
+    case symbol
+    /// 輪だけ
+    case ring
+    /// 色だけ
+    case swatch
+    /// 文字盤の数字だけ（大きさ・書体）
+    case dialNumber
+    /// アプリの画面の形だけ（減り方）
+    case meter
+    /// アプリの画面の数字だけ（数字・大きさ・書体・太さ・縁取り）
+    case digits
+    /// 画面の枠と、数字の置き場所
+    case placement
+    /// アプリの画面まるごと（縁取りは水の上でしか違いが見えない）
+    case face
+
+    /// 見本の形。丸か、画面（角の丸い長方形）か
+    var isRound: Bool {
+        switch self {
+        case .dial, .symbol, .ring, .swatch, .dialNumber: true
+        case .meter, .digits, .placement, .face: false
+        }
+    }
+}
+
+/// 選択肢ひとつ。**その項目だけの小さな見本と、番号。**
 private struct Chip: View {
     let design: FaceDesign
     let code: String
+    let art: ChipArt
     let chosen: Bool
-    /// 文字盤の項目なら丸を、アプリの項目なら画面を描く
-    let dial: Bool
     let duration: Int
     let tap: () -> Void
 
     /// 見本は「90秒のうち58秒残り」で止めて描く。**選択肢の絵は動かさない**（上の見本が動いている）
-    private var engine: TimerEngine {
-        TimerEngine(duration: 90, startedAt: Date(timeIntervalSince1970: 0))
-    }
+    private var engine: TimerEngine { TimerEngine(duration: 90, startedAt: Date(timeIntervalSince1970: 0)) }
     private var now: Date { Date(timeIntervalSince1970: 32) }
+
+    private var accent: Color { Color(hex: design.theme.liquidTop) }
+    /// 文字盤の地。**黒を敷く**（iPhone の明るい画面でも、文字盤での見え方に近づける）
+    private var dialGround: Color { Color(hex: 0x0B2E30) }
+    private static let round: CGFloat = 54
+    private static let screen = CGSize(width: 54, height: 66)
 
     var body: some View {
         Button(action: tap) {
             VStack(spacing: 4) {
-                Group {
-                    if dial {
-                        ZStack {
-                            Circle().fill(Color(hex: 0x0B2E30))
-                            DialFace(design: design, duration: duration, diameter: 54)
-                        }
-                        .frame(width: 54, height: 54)
-                    } else {
-                        DrainFace(engine: engine, now: now, design: design, metrics: .sample)
-                            .frame(width: 54, height: 66)
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    }
-                }
-                .overlay {
-                    Group {
-                        if dial {
-                            Circle().strokeBorder(borderColor, lineWidth: chosen ? 2.5 : 1)
-                        } else {
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .strokeBorder(borderColor, lineWidth: chosen ? 2.5 : 1)
+                // **選んでいる印は見本の外側に描く。** 見本に重ねると、
+                // 「輪なし（R1）」が輪に見えてしまう（2026-09-27 本人の指摘）
+                picture
+                    .padding(5)
+                    .overlay {
+                        if chosen {
+                            if art.isRound {
+                                Circle().strokeBorder(accent, lineWidth: 2.5)
+                            } else {
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .strokeBorder(accent, lineWidth: 2.5)
+                            }
                         }
                     }
-                }
 
                 Text(code)
                     .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    .foregroundStyle(chosen ? Color(hex: design.theme.liquidTop)
-                                            : Color(hex: PaletteHex.ink).opacity(0.5))
+                    .foregroundStyle(chosen ? accent : Color(hex: PaletteHex.ink).opacity(0.5))
             }
         }
         .buttonStyle(.plain)
@@ -243,8 +258,79 @@ private struct Chip: View {
         .accessibilityAddTraits(chosen ? [.isSelected] : [])
     }
 
-    private var borderColor: Color {
-        chosen ? Color(hex: design.theme.liquidTop) : .white.opacity(0.12)
+    @ViewBuilder
+    private var picture: some View {
+        switch art {
+        case .dial:
+            inCircle { DialFace(design: design, duration: duration, diameter: Self.round) }
+
+        case .symbol:
+            inCircle {
+                Image(systemName: design.dialMark.symbol)
+                    .font(.system(size: Self.round * 0.42, weight: .semibold))
+                    .foregroundStyle(accent)
+            }
+
+        case .ring:
+            inCircle {
+                DialRingArt(ring: design.dialRing, color: accent, diameter: Self.round)
+            }
+
+        case .swatch:
+            // 色だけ。水の上端から下端までの塗りをそのまま出す
+            Circle()
+                .fill(LinearGradient(colors: [Color(hex: design.theme.liquidTop),
+                                              Color(hex: design.theme.liquidBottom)],
+                                     startPoint: .top, endPoint: .bottom))
+                .frame(width: Self.round, height: Self.round)
+
+        case .dialNumber:
+            inCircle { DialFace(design: numberOnly, duration: duration, diameter: Self.round) }
+
+        case .meter:
+            inScreen {
+                DrainFace(engine: engine, now: now, design: design, metrics: .sample,
+                          showsDigits: false)
+            }
+
+        case .face:
+            inScreen { DrainFace(engine: engine, now: now, design: design, metrics: .sample) }
+
+        case .digits, .placement:
+            inScreen {
+                DrainFace(engine: engine, now: now, design: design, metrics: .sample,
+                          showsMeter: false)
+            }
+        }
     }
+
+    private func inCircle(@ViewBuilder _ content: () -> some View) -> some View {
+        ZStack {
+            Circle().fill(dialGround)
+            content()
+        }
+        .frame(width: Self.round, height: Self.round)
+    }
+
+    private func inScreen(@ViewBuilder _ content: () -> some View) -> some View {
+        content()
+            .frame(width: Self.screen.width, height: Self.screen.height)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            // 画面の形が分かるよう、ごく薄い縁を内側に入れる（選んでいる印ではない）
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(.white.opacity(0.10), lineWidth: 1)
+            }
+    }
+
+    /// 大きさ・書体の見本は**数字だけ**にする（絵も輪も描かない）
+    private var numberOnly: FaceDesign {
+        var d = design
+        d.dialContent = .numberOnly
+        d.dialRing = .none
+        d.dialTint = .colored
+        return d
+    }
+
 }
 #endif
