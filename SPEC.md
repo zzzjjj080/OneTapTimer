@@ -128,3 +128,14 @@ UserDefaults。`duration`（秒）と `engine`（JSON：duration / endAt / finis
 
 道具は `./Tools-MakeTip.py`（作る・`--status` で状態を見る）。
 文言は `store/listing.json` の `tip`、審査用スクショは `store/tip-review.png`。
+
+## 見た目（1.3 から）
+
+**決めるのは iPhone だけ。Watch には変える操作を置かない**（2026-09-27 本人決定）。
+
+- 選択肢と番号は `OneTapTimerCore/FaceDesign.swift`。一覧と既定は README の表
+- **番号は 1 から連番で、抜けを作らない。** 振り直したら `FaceDesignTests` も直す
+- 見本表 `design/catalog-1.png`・`-2.png` は `./Tools-MakeCatalog.sh` で作り直す
+- iPhone の画面は「大きな見本（Watch の形）＋ 状態の3つ（走っている・残り10秒・終わった）＋ 種類ごとの横並び」
+- 選んだ瞬間に保存して送る。**「送る」ボタンは置かない**
+- 届くのは Watch アプリが次に起きたとき。**すぐには変わらない**（`updateApplicationContext` の仕様）
