@@ -12,8 +12,9 @@ trap 'rm -rf "$W"' EXIT
 for f in FaceDesign ThemeHex PaletteHex TimeText TimerEngine DurationRule Units; do
   cp "OneTapTimerCore/Sources/OneTapTimerCore/$f.swift" "$W/"
 done
-for f in Skin DrainFace; do
-  sed -e '/^import OneTapTimerCore$/d' -e 's/, bundle: .module//g' \
+for f in Skin DrainFace DialFace; do
+  # `bundle: .module` と `widgetAccentable()` は SwiftPM／WidgetKit の外では使えない。その場で外す
+  sed -e '/^import OneTapTimerCore$/d' -e 's/, bundle: .module//g' -e 's/\.widgetAccentable()//g' \
       "OneTapTimerUI/Sources/OneTapTimerUI/$f.swift" > "$W/$f.swift"
 done
 cp Tools-MakeCatalog.swift "$W/main.swift"

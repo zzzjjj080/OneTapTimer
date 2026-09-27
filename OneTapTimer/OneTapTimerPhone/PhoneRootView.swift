@@ -14,6 +14,7 @@ struct PhoneRootView: View {
     var body: some View {
         DesignEditor(design: Binding(get: { runner.design },
                                      set: { runner.apply(design: $0, send: true) }),
+                     duration: runner.duration,
                      onTip: { showTip = true })
             .sheet(isPresented: $showTip) {
                 TipSheet(tipJar: tipJar, theme: runner.themeHex) { showTip = false }

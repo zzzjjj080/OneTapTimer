@@ -29,14 +29,14 @@ struct DrainFaceTests {
         }
     }
 
-    @Test("どの見た目の組み合わせでも描ける（形・向き・数字・置き場所）")
+    @Test("どの見た目の組み合わせでも描ける（形・数字・大きさ・置き場所）")
     func everyDesignDraws() {
         let engine = TimerEngine(duration: 90, startedAt: t0)
         for style in FaceStyle.allCases {
-            for direction in FaceDirection.allCases {
-                for digits in FaceDigits.allCases {
+            for digits in FaceDigits.allCases {
+                for size in FaceSize.allCases {
                     for place in FacePlace.allCases {
-                        let d = FaceDesign(style: style, direction: direction, digits: digits, place: place)
+                        let d = FaceDesign(style: style, digits: digits, size: size, place: place)
                         _ = DrainFace(engine: engine, now: t0 + 45, design: d, metrics: .watch).body
                     }
                 }
@@ -44,17 +44,27 @@ struct DrainFaceTests {
         }
     }
 
-    @Test("地が明るいときに白い文字を選んでも、読める濃さに落ちる")
+    @Test("どの色でも、走っている画面と終わった画面の文字が読める")
     func inkStaysReadable() {
-        for ink in FaceInk.allCases {
-            let design = FaceDesign(ground: .white, ink: ink)
-            let skin = Skin(state: .running, design: design)
-            #expect(PaletteHex.contrast(skin.inkHex, skin.groundHex) >= 3.0, "\(ink.code) が読めない")
+        for color in FaceColor.allCases {
+            for state in [Skin.State.running, .finalStretch, .paused, .done] {
+                let skin = Skin(state: state, design: FaceDesign(color: color))
+                #expect(PaletteHex.contrast(skin.inkHex, skin.groundHex) >= 4.5,
+                        "\(color.code) の \(state) が読めない")
+            }
         }
-        // 終わった画面（白く抜ける）でも同じ
-        for ink in FaceInk.allCases {
-            let skin = Skin(state: .done, design: FaceDesign(ink: ink))
-            #expect(PaletteHex.contrast(skin.inkHex, skin.groundHex) >= 3.0, "\(ink.code) が読めない")
+    }
+
+    @Test("文字盤の丸は、どの組み合わせでも描ける")
+    func everyDialDraws() {
+        for content in DialContent.allCases {
+            for ring in DialRing.allCases {
+                for tint in DialTint.allCases {
+                    let d = FaceDesign(dialContent: content, dialRing: ring, dialTint: tint)
+                    _ = DialFace(design: d, duration: 90, diameter: 46).body
+                    _ = DialFace(design: d, duration: 90, diameter: 46, fullColor: false).body
+                }
+            }
         }
     }
 }

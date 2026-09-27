@@ -5,114 +5,91 @@ import OneTapTimerCore
 
 /// 見た目を決める画面（iPhone だけ）。
 ///
-/// **選択肢は文字で説明しない。小さな見本と番号（`Y2` など）で並べる。**
+/// **選択肢は文字で説明しない。小さな見本と番号（`W2` など）で並べる。**
 /// 16言語ぶんの説明文を持たずに済み、本人とのやり取りも番号でできる
 /// （見本表 `design/catalog-*.png` と同じ番号）。
+///
+/// 上の見本は**画面に貼り付けて動かし続ける**（2026-09-27 本人指示）。
+/// 下を選びながら、その場で変わるのが見える。**60秒から0秒まで減って、また60秒に戻る。**
 ///
 /// 選んだ瞬間に保存して Apple Watch へ送る。**「送る」ボタンは置かない**
 /// （押し忘れたまま閉じられるより、常に最新が向こうにあるほうがよい）。
 public struct DesignEditor: View {
     @Binding public var design: FaceDesign
-    /// 見本に出す状態。終わりが近いとき（L）・終わった画面（E）は、その状態にしないと違いが見えない
-    @State private var preview: PreviewState = .running
+    /// 見本に出す秒数（設定してある長さ）。文字盤の見本に出る
+    public var duration: Int
     public var onTip: (() -> Void)?
 
-    public init(design: Binding<FaceDesign>, onTip: (() -> Void)? = nil) {
-        self._design = design; self.onTip = onTip
-    }
-
-    enum PreviewState: CaseIterable, Hashable {
-        case running, last, done
-
-        var title: LocalizedStringResource {
-            switch self {
-            case .running: "走っている"
-            case .last: "残り10秒"
-            case .done: "終わった"
-            }
-        }
-
-        /// 見本の中身。**終わった見本は `advance` を通す**（渡しただけでは走ったままになる）。
-        /// 終わりが近い見本は30秒のタイマーにする（90秒だと水が残らず、20秒以下だと「終わりが近い」が無い）
-        func engine(at now: Date) -> TimerEngine {
-            switch self {
-            case .running: return TimerEngine(duration: 90, startedAt: now.addingTimeInterval(-32))
-            case .last: return TimerEngine(duration: 30, startedAt: now.addingTimeInterval(-23))
-            case .done:
-                var e = TimerEngine(duration: 90, startedAt: now.addingTimeInterval(-91))
-                _ = e.advance(to: now)
-                return e
-            }
-        }
+    public init(design: Binding<FaceDesign>, duration: Int, onTip: (() -> Void)? = nil) {
+        self._design = design; self.duration = duration; self.onTip = onTip
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(spacing: 22) {
-                WatchPreview(design: design, state: preview)
+        VStack(spacing: 0) {
+            // **貼り付けたまま動かす。** 下を選んでもここは隠れない
+            PreviewBar(design: design, duration: duration)
 
-                Picker("見本", selection: $preview) {
-                    ForEach(PreviewState.allCases, id: \.self) { s in
-                        Text(s.title).tag(s)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal, 16)
+            ScrollView {
+                VStack(spacing: 22) {
+                    section("文字盤")
+                    row("中身", \.dialContent)
+                    row("絵", \.dialMark)
+                    row("輪", \.dialRing)
+                    row("色の付け方", \.dialTint)
+                    row("大きさ", \.dialSize)
+                    row("書体", \.dialTypeface)
 
-                rows
+                    section("アプリの画面")
+                    row("減り方", \.style)
+                    row("色", \.color)
+                    row("数字", \.digits)
+                    row("大きさ", \.size)
+                    row("書体", \.typeface)
+                    row("文字の太さ", \.weight)
+                    row("縁取り", \.outline)
+                    row("置き場所", \.place)
 
-                Button {
-                    design = .standard
-                } label: {
-                    Text("はじめに戻す", bundle: .module)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Color(hex: design.theme.liquidTop))
-                }
-                .buttonStyle(.plain)
-                .padding(.top, 4)
-
-                if let onTip {
-                    Button(action: onTip) {
-                        Image(systemName: "heart")
-                            .font(.system(size: 20, weight: .semibold))
+                    Button { design = .standard } label: {
+                        Text("はじめに戻す", bundle: .module)
+                            .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(Color(hex: design.theme.liquidTop))
-                            .frame(width: 52, height: 40)
-                            .background(Capsule().fill(Color.white.opacity(0.08)))
                     }
                     .buttonStyle(.plain)
-                    .accessibilityIdentifier("tip")
-                }
+                    .padding(.top, 4)
 
-                Text(BuildStamp.text)
-                    .font(.system(size: 12, weight: .medium))
-                    .monospacedDigit()
-                    .foregroundStyle(Color(hex: PaletteHex.ink).opacity(0.35))
-                    .accessibilityIdentifier("buildStamp")
-                    .padding(.bottom, 24)
+                    if let onTip {
+                        Button(action: onTip) {
+                            Image(systemName: "heart")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundStyle(Color(hex: design.theme.liquidTop))
+                                .frame(width: 52, height: 40)
+                                .background(Capsule().fill(Color.white.opacity(0.08)))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("tip")
+                    }
+
+                    Text(BuildStamp.text)
+                        .font(.system(size: 12, weight: .medium))
+                        .monospacedDigit()
+                        .foregroundStyle(Color(hex: PaletteHex.ink).opacity(0.35))
+                        .accessibilityIdentifier("buildStamp")
+                        .padding(.bottom, 24)
+                }
+                .padding(.top, 16)
             }
-            .padding(.top, 12)
         }
         .background(Color(hex: PaletteHex.ground).ignoresSafeArea())
     }
 
-    /// 並び順は「形 → 色 → 数字 → 仕上げ」。よく変えるものを上に置く
-    @ViewBuilder
-    private var rows: some View {
-        row("減り方", \.style)
-        row("色", \.color)
-        row("塗り方", \.fill)
-        row("向き", \.direction)
-        row("地の色", \.ground)
-        row("数字", \.digits)
-        row("大きさ", \.size)
-        row("書体", \.typeface)
-        row("文字の太さ", \.weight)
-        row("文字の色", \.ink)
-        row("縁取り", \.outline)
-        row("置き場所", \.place)
-        row("終わりが近いとき", \.last)
-        row("終わった画面", \.done)
-        row("目盛り", \.ticks)
+    private func section(_ title: LocalizedStringKey) -> some View {
+        Text(title, bundle: .module)
+            .font(.system(size: 13, weight: .bold))
+            .tracking(1)
+            .foregroundStyle(Color(hex: design.theme.liquidTop).opacity(0.9))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.top, 6)
     }
 
     /// 1種類ぶんの横並び。**見本はその項目だけを差し替えたもの**（ほかはいまの設定のまま）
@@ -128,7 +105,8 @@ public struct DesignEditor: View {
                 LazyHStack(spacing: 10) {
                     ForEach(T.allCases) { choice in
                         Chip(design: changing(key, to: choice), code: choice.code,
-                             chosen: design[keyPath: key] == choice, state: preview) {
+                             chosen: design[keyPath: key] == choice,
+                             dial: Self.isDial(key), duration: duration) {
                             design[keyPath: key] = choice
                         }
                     }
@@ -136,6 +114,13 @@ public struct DesignEditor: View {
                 .padding(.horizontal, 16)
             }
         }
+    }
+
+    /// 文字盤の項目かどうか。見本の絵を丸にするか、画面にするかを決める
+    private static func isDial<T>(_ key: WritableKeyPath<FaceDesign, T>) -> Bool {
+        [\FaceDesign.dialContent as PartialKeyPath<FaceDesign>, \FaceDesign.dialMark,
+         \FaceDesign.dialRing, \FaceDesign.dialTint, \FaceDesign.dialSize,
+         \FaceDesign.dialTypeface].contains(key as PartialKeyPath<FaceDesign>)
     }
 
     /// いまの設定の、その項目だけを差し替えたもの
@@ -146,27 +131,100 @@ public struct DesignEditor: View {
     }
 }
 
+/// 上に貼り付ける見本。**文字盤の丸とアプリの画面を並べ、いつも動いている。**
+private struct PreviewBar: View {
+    let design: FaceDesign
+    let duration: Int
+
+    /// 見本の周期。**60秒から0秒まで減って、また60秒に戻る**（2026-09-27 本人指示）
+    static let loop: Double = 60
+
+    /// いま何秒目か。時計から割り出すので、画面を作り直しても飛ばない
+    private func engine(at now: Date) -> TimerEngine {
+        let phase = now.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: Self.loop)
+        return TimerEngine(duration: Int(Self.loop), startedAt: now.addingTimeInterval(-phase))
+    }
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 15)) { t in
+            HStack(spacing: 18) {
+                // 文字盤（丸）。実寸に近い大きさで、黒い地に置く
+                ZStack {
+                    Circle().fill(Color(hex: 0x0B2E30))
+                    DialFace(design: design, duration: duration, diameter: 62)
+                }
+                .frame(width: 62, height: 62)
+                .accessibilityIdentifier("dialPreview")
+
+                // アプリの画面（Apple Watch の形）
+                DrainFace(engine: engine(at: t.date), now: t.date, design: design,
+                          metrics: FaceMetrics(main: 52, sub: 12, label: 8, gap: 0))
+                    .frame(width: 74, height: 90)
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .padding(4)
+                    .background {
+                        RoundedRectangle(cornerRadius: 24, style: .continuous).fill(Color(white: 0.17))
+                    }
+                    .accessibilityIdentifier("preview")
+
+                Text(design.text)
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .foregroundStyle(Color(hex: PaletteHex.ink).opacity(0.4))
+                    .lineLimit(4)
+                    .accessibilityIdentifier("designCode")
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+        }
+        .background(Color(hex: 0x0A0A0A))
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(.white.opacity(0.10)).frame(height: 1)
+        }
+    }
+}
+
 /// 選択肢ひとつ。**小さな見本と番号。**
 private struct Chip: View {
     let design: FaceDesign
     let code: String
     let chosen: Bool
-    let state: DesignEditor.PreviewState
+    /// 文字盤の項目なら丸を、アプリの項目なら画面を描く
+    let dial: Bool
+    let duration: Int
     let tap: () -> Void
+
+    /// 見本は「90秒のうち58秒残り」で止めて描く。**選択肢の絵は動かさない**（上の見本が動いている）
+    private var engine: TimerEngine {
+        TimerEngine(duration: 90, startedAt: Date(timeIntervalSince1970: 0))
+    }
+    private var now: Date { Date(timeIntervalSince1970: 32) }
 
     var body: some View {
         Button(action: tap) {
             VStack(spacing: 4) {
-                TimelineView(.periodic(from: .now, by: 0.5)) { t in
-                    DrainFace(engine: state.engine(at: t.date), now: t.date,
-                              design: design, metrics: .sample)
+                Group {
+                    if dial {
+                        ZStack {
+                            Circle().fill(Color(hex: 0x0B2E30))
+                            DialFace(design: design, duration: duration, diameter: 54)
+                        }
+                        .frame(width: 54, height: 54)
+                    } else {
+                        DrainFace(engine: engine, now: now, design: design, metrics: .sample)
+                            .frame(width: 54, height: 66)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    }
                 }
-                .frame(width: 54, height: 66)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(chosen ? Color(hex: design.theme.liquidTop) : .white.opacity(0.12),
-                                      lineWidth: chosen ? 2.5 : 1)
+                    Group {
+                        if dial {
+                            Circle().strokeBorder(borderColor, lineWidth: chosen ? 2.5 : 1)
+                        } else {
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .strokeBorder(borderColor, lineWidth: chosen ? 2.5 : 1)
+                        }
+                    }
                 }
 
                 Text(code)
@@ -179,42 +237,9 @@ private struct Chip: View {
         .accessibilityIdentifier("choice-\(code)")
         .accessibilityAddTraits(chosen ? [.isSelected] : [])
     }
-}
 
-/// いま選んでいる見た目を、Apple Watch の画面の形で大きく出す
-private struct WatchPreview: View {
-    let design: FaceDesign
-    let state: DesignEditor.PreviewState
-
-    var body: some View {
-        VStack(spacing: 8) {
-            TimelineView(.animation(minimumInterval: 1.0 / 20, paused: state == .done)) { t in
-                DrainFace(engine: state.engine(at: t.date), now: t.date, design: design,
-                          metrics: FaceMetrics(main: 96, sub: 20, label: 13, gap: 0))
-            }
-            .frame(width: 180, height: 220)
-            // Apple Watch の画面に見立てる。**縁は塗りで作る**
-            // （細い線だと、水の色が明るいときに縁が消えて画面の形が分からなくなる）
-            .clipShape(RoundedRectangle(cornerRadius: 40, style: .continuous))
-            .padding(8)
-            .background {
-                RoundedRectangle(cornerRadius: 48, style: .continuous)
-                    .fill(Color(white: 0.17))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 48, style: .continuous)
-                            .strokeBorder(Color(white: 0.32), lineWidth: 1)
-                    }
-            }
-            .accessibilityIdentifier("preview")
-
-            Text(design.text)
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
-                .foregroundStyle(Color(hex: PaletteHex.ink).opacity(0.35))
-                .lineLimit(2)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 24)
-                .accessibilityIdentifier("designCode")
-        }
+    private var borderColor: Color {
+        chosen ? Color(hex: design.theme.liquidTop) : .white.opacity(0.12)
     }
 }
 #endif

@@ -13,6 +13,8 @@
 		A10000000000000000000071 /* OneTapTimerUI in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000070 /* OneTapTimerUI */; };
 		A10000000000000000000073 /* OneTapTimerCore in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000072 /* OneTapTimerCore */; };
 		A10000000000000000000075 /* OneTapTimerUI in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000074 /* OneTapTimerUI */; };
+		A10000000000000000000081 /* OneTapTimerCore in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000080 /* OneTapTimerCore */; };
+		A10000000000000000000083 /* OneTapTimerUI in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000082 /* OneTapTimerUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -81,7 +83,10 @@
 				A1000000000000000000002E /* OneTapTimerCore in Frameworks */,
 				A10000000000000000000071 /* OneTapTimerUI in Frameworks */,
 			); runOnlyForDeploymentPostprocessing = 0; };
-		A10000000000000000000034 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A10000000000000000000034 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (
+				A10000000000000000000081 /* OneTapTimerCore in Frameworks */,
+				A10000000000000000000083 /* OneTapTimerUI in Frameworks */,
+			); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -175,7 +180,10 @@
 				A10000000000000000000032 /* OneTapTimerWidget */,
 			);
 			name = OneTapTimerWidget;
-			packageProductDependencies = ();
+			packageProductDependencies = (
+				A10000000000000000000080 /* OneTapTimerCore */,
+				A10000000000000000000082 /* OneTapTimerUI */,
+			);
 			productName = OneTapTimerWidget;
 			productReference = A10000000000000000000031 /* OneTapTimerWidget.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -541,6 +549,8 @@
 		A10000000000000000000070 /* OneTapTimerUI */ = {isa = XCSwiftPackageProductDependency; productName = OneTapTimerUI; };
 		A10000000000000000000072 /* OneTapTimerCore */ = {isa = XCSwiftPackageProductDependency; productName = OneTapTimerCore; };
 		A10000000000000000000074 /* OneTapTimerUI */ = {isa = XCSwiftPackageProductDependency; productName = OneTapTimerUI; };
+		A10000000000000000000080 /* OneTapTimerCore */ = {isa = XCSwiftPackageProductDependency; productName = OneTapTimerCore; };
+		A10000000000000000000082 /* OneTapTimerUI */ = {isa = XCSwiftPackageProductDependency; productName = OneTapTimerUI; };
 /* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A10000000000000000000001 /* Project object */;

@@ -11,11 +11,13 @@ struct FaceDesignTests {
             let codes = T.allCases.map(\.code)
             #expect(codes == (1...codes.count).map { "\(head)\($0)" }, "\(head) が連番でない: \(codes)")
         }
-        check(FaceStyle.self, "Y"); check(FaceColor.self, "C"); check(FaceFill.self, "G")
-        check(FaceDirection.self, "D"); check(FaceGround.self, "B"); check(FaceDigits.self, "N")
+        // アプリの画面
+        check(FaceStyle.self, "Y"); check(FaceColor.self, "C"); check(FaceDigits.self, "N")
         check(FaceSize.self, "S"); check(FaceTypeface.self, "T"); check(FaceWeight.self, "F")
-        check(FaceInk.self, "K"); check(FaceOutline.self, "O"); check(FacePlace.self, "P")
-        check(FaceLast.self, "L"); check(FaceDone.self, "E"); check(FaceTicks.self, "M")
+        check(FaceOutline.self, "O"); check(FacePlace.self, "P")
+        // 文字盤（コンプリケーション）
+        check(DialContent.self, "W"); check(DialMark.self, "I"); check(DialRing.self, "R")
+        check(DialTint.self, "V"); check(DialSize.self, "U"); check(DialTypeface.self, "J")
     }
 
     @Test("既定は 1.1 までと同じ見た目（水が減る・ティール・秒＋時計）")
@@ -24,24 +26,26 @@ struct FaceDesignTests {
         #expect(d.style == .liquid)
         #expect(d.color == .teal)
         #expect(d.digits == .secondsWithClock)
-        #expect(d.text == "Y1 C1 G1 D1 B1 N1 S3 T1 F3 K1 O1 P1 L1 E1 M1")
+        #expect(d.dialContent == .markAndNumber)
+        #expect(d.text == "Y1 C1 N1 S3 T1 F3 O1 P1 W1 I1 R1 V1 U2 J1")
     }
 
     @Test("1行にして戻すと同じものになる")
     func roundTripsThroughText() {
-        let d = FaceDesign(style: .ring, color: .pink, fill: .solid, direction: .up, ground: .white,
-                           digits: .clockOnly, size: .small, typeface: .serif, weight: .light,
-                           ink: .black, outline: .stroke, place: .bottom, last: .red, done: .filled,
-                           ticks: .tenths)
+        let d = FaceDesign(style: .ring, color: .pink, digits: .clockOnly, size: .small,
+                           typeface: .serif, weight: .light, outline: .stroke, place: .bottom,
+                           dialContent: .numberOnly, dialMark: .hourglass, dialRing: .dotted,
+                           dialTint: .filled, dialSize: .large, dialTypeface: .monospaced)
         #expect(FaceDesign(text: d.text) == d)
     }
 
     @Test("知らない番号は、その項目だけ既定に落ちる。ほかは残る")
     func unknownCodesFallBackPerItem() {
-        let d = FaceDesign(text: "Y2 C99 G3")
-        #expect(d.style == .ring)          // 読めたものは効く
-        #expect(d.color == .teal)          // 消えた番号は既定
-        #expect(d.fill == .deepening)
+        // G3（塗り方）は 1.3 で消した種類。読み飛ばされるだけで、ほかは効く
+        let d = FaceDesign(text: "Y2 C99 G3 W3")
+        #expect(d.style == .ring)               // 読めたものは効く
+        #expect(d.color == .teal)               // 消えた番号は既定
+        #expect(d.dialContent == .numberAndUnit)
         #expect(d.digits == .secondsWithClock)  // 書いていない項目も既定
     }
 

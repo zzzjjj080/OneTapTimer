@@ -191,7 +191,8 @@ private struct Edge: ViewModifier {
     }
 }
 
-/// Y 減り方。**水・輪・棒・色が薄れる**の4つ。
+/// Y 減り方。**水・輪・棒・色が薄れる**の4つ。減るのは下へ、塗りは上下グラデで固定（1.3）。
+///
 /// `Canvas` は自分の大きさを知っているので `GeometryReader` に聞かずに済む
 /// （watchOS では安全領域の扱いで高さが化ける）。
 struct Meter: View {
@@ -200,6 +201,7 @@ struct Meter: View {
     var design: FaceDesign
 
     private var f: Double { max(0, min(1, fraction)) }
+    private var colors: [Color] { [skin.liquidTop, skin.liquidBottom] }
 
     var body: some View {
         switch design.style {
@@ -210,56 +212,27 @@ struct Meter: View {
         }
     }
 
+    /// 残っているぶんの四角（下から上へ減る）
+    private func filled(in size: CGSize) -> CGRect {
+        CGRect(x: 0, y: size.height * (1 - f), width: size.width, height: size.height * f)
+    }
+
+    private func shading(_ rect: CGRect) -> GraphicsContext.Shading {
+        .linearGradient(Gradient(colors: colors),
+                        startPoint: CGPoint(x: rect.minX, y: rect.minY),
+                        endPoint: CGPoint(x: rect.minX, y: rect.maxY))
+    }
+
     // MARK: 水（Y1）
 
     private var liquid: some View {
         Canvas { ctx, size in
             guard f > 0 else { return }
-            let rect = filled(in: CGRect(origin: .zero, size: size))
+            let rect = filled(in: size)
             ctx.fill(Path(rect), with: shading(rect))
             // 水面の光。面積の境目がはっきりする
-            ctx.fill(Path(surface(of: rect, in: size)), with: .color(.white.opacity(0.55)))
-            ticks(ctx, size)
-        }
-    }
-
-    /// 減る向き（D）。**残っているぶん**の四角を返す
-    private func filled(in r: CGRect) -> CGRect {
-        switch design.direction {
-        case .down: CGRect(x: 0, y: r.height * (1 - f), width: r.width, height: r.height * f)
-        case .up: CGRect(x: 0, y: 0, width: r.width, height: r.height * f)
-        case .left: CGRect(x: 0, y: 0, width: r.width * f, height: r.height)
-        case .right: CGRect(x: r.width * (1 - f), y: 0, width: r.width * f, height: r.height)
-        }
-    }
-
-    /// 水面の線（減っていく側の端）
-    private func surface(of rect: CGRect, in size: CGSize) -> CGRect {
-        switch design.direction {
-        case .down: CGRect(x: 0, y: rect.minY, width: size.width, height: 1.5)
-        case .up: CGRect(x: 0, y: rect.maxY - 1.5, width: size.width, height: 1.5)
-        case .left: CGRect(x: rect.maxX - 1.5, y: 0, width: 1.5, height: size.height)
-        case .right: CGRect(x: rect.minX, y: 0, width: 1.5, height: size.height)
-        }
-    }
-
-    private func shading(_ rect: CGRect) -> GraphicsContext.Shading {
-        let colors = fillColors
-        let horizontal = design.direction == .left || design.direction == .right
-        return .linearGradient(Gradient(colors: colors),
-                               startPoint: CGPoint(x: rect.minX, y: rect.minY),
-                               endPoint: horizontal ? CGPoint(x: rect.maxX, y: rect.minY)
-                                                    : CGPoint(x: rect.minX, y: rect.maxY))
-    }
-
-    /// G 塗り方
-    private var fillColors: [Color] {
-        switch design.fill {
-        case .gradient: [skin.liquidTop, skin.liquidBottom]
-        case .solid: [skin.liquidTop, skin.liquidTop]
-        case .deepening:
-            // 残りが少ないほど濃くなる
-            [Color(hex: PaletteHex.mix(skin.liquidTopHex, skin.liquidBottomHex, 1 - f)), skin.liquidBottom]
+            ctx.fill(Path(CGRect(x: 0, y: rect.minY, width: size.width, height: 1.5)),
+                     with: .color(.white.opacity(0.55)))
         }
     }
 
@@ -272,20 +245,16 @@ struct Meter: View {
             let box = CGRect(x: (size.width - side) / 2 + width / 2 + side * 0.06,
                              y: (size.height - side) / 2 + width / 2 + side * 0.06,
                              width: side * 0.88 - width, height: side * 0.88 - width)
-            let circle = Path(ellipseIn: box)
-            ctx.stroke(circle, with: .color(skin.liquidTop.opacity(0.16)), lineWidth: width)
+            ctx.stroke(Path(ellipseIn: box), with: .color(skin.liquidTop.opacity(0.16)), lineWidth: width)
             guard f > 0 else { return }
             // 12時から右回りに減る
             var arc = Path()
             arc.addArc(center: CGPoint(x: box.midX, y: box.midY), radius: box.width / 2,
-                       startAngle: .degrees(-90),
-                       endAngle: .degrees(-90 + 360 * f),
-                       clockwise: design.direction == .up || design.direction == .left)
-            ctx.stroke(arc, with: .linearGradient(Gradient(colors: fillColors),
+                       startAngle: .degrees(-90), endAngle: .degrees(-90 + 360 * f), clockwise: false)
+            ctx.stroke(arc, with: .linearGradient(Gradient(colors: colors),
                                                   startPoint: CGPoint(x: box.midX, y: box.minY),
                                                   endPoint: CGPoint(x: box.midX, y: box.maxY)),
                        style: StrokeStyle(lineWidth: width, lineCap: .round))
-            ticks(ctx, size)
         }
     }
 
@@ -293,21 +262,16 @@ struct Meter: View {
 
     private var bar: some View {
         Canvas { ctx, size in
-            let vertical = design.direction == .down || design.direction == .up
-            let thickness = (vertical ? size.width : size.height) * 0.22
-            let long = (vertical ? size.height : size.width) * 0.78
-            let track = CGRect(x: (size.width - (vertical ? thickness : long)) / 2,
-                               y: (size.height - (vertical ? long : thickness)) / 2,
-                               width: vertical ? thickness : long,
-                               height: vertical ? long : thickness)
+            let thickness = size.width * 0.22
+            let long = size.height * 0.78
+            let track = CGRect(x: (size.width - thickness) / 2, y: (size.height - long) / 2,
+                               width: thickness, height: long)
             let radius = thickness / 2
             ctx.fill(Path(roundedRect: track, cornerRadius: radius),
                      with: .color(skin.liquidTop.opacity(0.16)))
             guard f > 0 else { return }
-            var rect = filled(in: CGRect(origin: .zero, size: track.size))
-            rect = rect.offsetBy(dx: track.minX, dy: track.minY)
+            let rect = filled(in: track.size).offsetBy(dx: track.minX, dy: track.minY)
             ctx.fill(Path(roundedRect: rect, cornerRadius: radius), with: shading(rect))
-            ticks(ctx, size)
         }
     }
 
@@ -318,40 +282,6 @@ struct Meter: View {
             let rect = CGRect(origin: .zero, size: size)
             ctx.opacity = 0.18 + 0.82 * f
             ctx.fill(Path(rect), with: shading(rect))
-            ctx.opacity = 1
-            ticks(ctx, size)
-        }
-    }
-
-    // MARK: 目盛り（M）
-
-    private func ticks(_ ctx: GraphicsContext, _ size: CGSize) {
-        let count: Int
-        switch design.ticks {
-        case .none: return
-        case .quarters: count = 4
-        case .tenths: count = 10
-        }
-        let vertical = design.direction == .down || design.direction == .up
-        let color = Color.white.opacity(0.22)
-        for i in 1..<count {
-            let t = Double(i) / Double(count)
-            if design.style == .ring {
-                let side = min(size.width, size.height)
-                let r = side * 0.44
-                let a = -Double.pi / 2 + 2 * .pi * t
-                let c = CGPoint(x: size.width / 2, y: size.height / 2)
-                var p = Path()
-                p.move(to: CGPoint(x: c.x + cos(a) * (r - side * 0.1), y: c.y + sin(a) * (r - side * 0.1)))
-                p.addLine(to: CGPoint(x: c.x + cos(a) * r, y: c.y + sin(a) * r))
-                ctx.stroke(p, with: .color(color), lineWidth: 1.5)
-            } else if vertical {
-                ctx.fill(Path(CGRect(x: 0, y: size.height * t, width: size.width, height: 1)),
-                         with: .color(color))
-            } else {
-                ctx.fill(Path(CGRect(x: size.width * t, y: 0, width: 1, height: size.height)),
-                         with: .color(color))
-            }
         }
     }
 }

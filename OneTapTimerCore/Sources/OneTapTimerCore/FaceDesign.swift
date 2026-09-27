@@ -58,44 +58,8 @@ public enum FaceColor: NumberedChoice {
     public static let fallback = FaceColor.teal
 }
 
-/// G 塗り方
-public enum FaceFill: NumberedChoice {
-    case gradient, solid, deepening
 
-    public var code: String {
-        switch self { case .gradient: "G1"; case .solid: "G2"; case .deepening: "G3" }
-    }
-    public var label: String {
-        switch self { case .gradient: "上下グラデ"; case .solid: "単色"; case .deepening: "進むほど濃く" }
-    }
-    public static let fallback = FaceFill.gradient
-}
 
-/// D 減る向き（水と棒のとき。輪は右回りで固定）
-public enum FaceDirection: NumberedChoice {
-    case down, up, left, right
-
-    public var code: String {
-        switch self { case .down: "D1"; case .up: "D2"; case .left: "D3"; case .right: "D4" }
-    }
-    public var label: String {
-        switch self { case .down: "下へ"; case .up: "上へ"; case .left: "左へ"; case .right: "右へ" }
-    }
-    public static let fallback = FaceDirection.down
-}
-
-/// B 地の色
-public enum FaceGround: NumberedChoice {
-    case black, charcoal, deepColor, white
-
-    public var code: String {
-        switch self { case .black: "B1"; case .charcoal: "B2"; case .deepColor: "B3"; case .white: "B4" }
-    }
-    public var label: String {
-        switch self { case .black: "黒"; case .charcoal: "濃い灰"; case .deepColor: "色の濃い側"; case .white: "白" }
-    }
-    public static let fallback = FaceGround.black
-}
 
 /// N 数字の出し方
 public enum FaceDigits: NumberedChoice {
@@ -163,22 +127,6 @@ public enum FaceWeight: NumberedChoice {
     public static let fallback = FaceWeight.heavy
 }
 
-/// K 文字の色
-public enum FaceInk: NumberedChoice {
-    case white, dim, black, cream, colored
-
-    public var code: String {
-        switch self {
-        case .white: "K1"; case .dim: "K2"; case .black: "K3"; case .cream: "K4"; case .colored: "K5"
-        }
-    }
-    public var label: String {
-        switch self {
-        case .white: "白"; case .dim: "うすい白"; case .black: "黒"; case .cream: "クリーム"; case .colored: "色と同じ"
-        }
-    }
-    public static let fallback = FaceInk.white
-}
 
 /// O 縁取り
 public enum FaceOutline: NumberedChoice {
@@ -206,83 +154,171 @@ public enum FacePlace: NumberedChoice {
     public static let fallback = FacePlace.center
 }
 
-/// L 終わりが近いとき（残り10秒）
-public enum FaceLast: NumberedChoice {
-    case amber, same, red, blink
+
+
+
+
+// MARK: - 文字盤（コンプリケーション）
+//
+// **押すとアプリが開くだけの部品**だが、文字盤にはこれが出ているので、**見た目はここがいちばん目に入る。**
+// 出せるのは「設定してある秒数」だけ（残り時間は出さない。アプリから出た時点で止まるため）。
+
+/// W 中身
+public enum DialContent: NumberedChoice {
+    /// 絵の下に秒数（1.2 までと同じ）
+    case markAndNumber
+    /// 数字だけ大きく
+    case numberOnly
+    /// 数字と単位（`90s`）
+    case numberAndUnit
+    /// 絵だけ
+    case markOnly
 
     public var code: String {
-        switch self { case .amber: "L1"; case .same: "L2"; case .red: "L3"; case .blink: "L4" }
+        switch self {
+        case .markAndNumber: "W1"; case .numberOnly: "W2"
+        case .numberAndUnit: "W3"; case .markOnly: "W4"
+        }
     }
     public var label: String {
-        switch self { case .amber: "琥珀になる"; case .same: "変えない"; case .red: "赤になる"; case .blink: "点滅" }
+        switch self {
+        case .markAndNumber: "絵と数字"; case .numberOnly: "数字だけ"
+        case .numberAndUnit: "数字と単位"; case .markOnly: "絵だけ"
+        }
     }
-    public static let fallback = FaceLast.amber
+    public var showsNumber: Bool { self != .markOnly }
+    public var showsMark: Bool { self == .markAndNumber || self == .markOnly }
+    public static let fallback = DialContent.markAndNumber
 }
 
-/// E 終わった画面
-public enum FaceDone: NumberedChoice {
-    case bright, dark, filled
+/// I 絵
+public enum DialMark: NumberedChoice {
+    case stopwatch, timer, hourglass, bolt, drop
 
     public var code: String {
-        switch self { case .bright: "E1"; case .dark: "E2"; case .filled: "E3" }
+        switch self {
+        case .stopwatch: "I1"; case .timer: "I2"; case .hourglass: "I3"
+        case .bolt: "I4"; case .drop: "I5"
+        }
     }
     public var label: String {
-        switch self { case .bright: "白く抜ける"; case .dark: "暗いまま"; case .filled: "色で埋める" }
+        switch self {
+        case .stopwatch: "ストップウォッチ"; case .timer: "タイマー"; case .hourglass: "砂時計"
+        case .bolt: "稲妻"; case .drop: "しずく"
+        }
     }
-    public static let fallback = FaceDone.bright
+    /// SF Symbols の名前。**watchOS 11 に無い記号を選ばない**（出ないと四角が出る）
+    public var symbol: String {
+        switch self {
+        case .stopwatch: "stopwatch"; case .timer: "timer"; case .hourglass: "hourglass"
+        case .bolt: "bolt.fill"; case .drop: "drop.fill"
+        }
+    }
+    public static let fallback = DialMark.stopwatch
 }
 
-/// M 目盛り
-public enum FaceTicks: NumberedChoice {
-    case none, quarters, tenths
+/// R 輪（丸い枠の中の縁取り）
+public enum DialRing: NumberedChoice {
+    case none, thin, thick, dotted
 
     public var code: String {
-        switch self { case .none: "M1"; case .quarters: "M2"; case .tenths: "M3" }
+        switch self { case .none: "R1"; case .thin: "R2"; case .thick: "R3"; case .dotted: "R4" }
     }
     public var label: String {
-        switch self { case .none: "なし"; case .quarters: "4つ"; case .tenths: "10個" }
+        switch self { case .none: "なし"; case .thin: "細い輪"; case .thick: "太い輪"; case .dotted: "点線" }
     }
-    public static let fallback = FaceTicks.none
+    public static let fallback = DialRing.none
+}
+
+/// V 色の付け方
+public enum DialTint: NumberedChoice {
+    /// 文字も絵も色つき
+    case colored
+    /// 白（文字盤の色に任せる）
+    case plain
+    /// 中を色で塗りつぶし、文字は黒
+    case filled
+
+    public var code: String {
+        switch self { case .colored: "V1"; case .plain: "V2"; case .filled: "V3" }
+    }
+    public var label: String {
+        switch self { case .colored: "色つき"; case .plain: "白"; case .filled: "塗りつぶし" }
+    }
+    public static let fallback = DialTint.colored
+}
+
+/// U 文字の大きさ（文字盤の中）
+public enum DialSize: NumberedChoice {
+    case small, medium, large
+
+    public var code: String {
+        switch self { case .small: "U1"; case .medium: "U2"; case .large: "U3" }
+    }
+    public var label: String {
+        switch self { case .small: "小"; case .medium: "中"; case .large: "大" }
+    }
+    public var ratio: Double {
+        switch self { case .small: 0.78; case .medium: 1.0; case .large: 1.22 }
+    }
+    public static let fallback = DialSize.medium
+}
+
+/// J 書体（文字盤の中）
+public enum DialTypeface: NumberedChoice {
+    case rounded, standard, monospaced
+
+    public var code: String {
+        switch self { case .rounded: "J1"; case .standard: "J2"; case .monospaced: "J3" }
+    }
+    public var label: String {
+        switch self { case .rounded: "丸ゴシック"; case .standard: "標準"; case .monospaced: "等幅" }
+    }
+    public static let fallback = DialTypeface.rounded
 }
 
 /// 見た目ひと組。**iPhone で決めて、Watch へ送る。**
 public struct FaceDesign: Codable, Equatable, Sendable {
+    // 走っている画面（アプリ）
     public var style: FaceStyle
     public var color: FaceColor
-    public var fill: FaceFill
-    public var direction: FaceDirection
-    public var ground: FaceGround
     public var digits: FaceDigits
     public var size: FaceSize
     public var typeface: FaceTypeface
     public var weight: FaceWeight
-    public var ink: FaceInk
     public var outline: FaceOutline
     public var place: FacePlace
-    public var last: FaceLast
-    public var done: FaceDone
-    public var ticks: FaceTicks
 
-    public init(style: FaceStyle = .fallback, color: FaceColor = .fallback, fill: FaceFill = .fallback,
-                direction: FaceDirection = .fallback, ground: FaceGround = .fallback,
+    // 文字盤（コンプリケーション）。**本人がいちばん見るのはこちら**
+    public var dialContent: DialContent
+    public var dialMark: DialMark
+    public var dialRing: DialRing
+    public var dialTint: DialTint
+    public var dialSize: DialSize
+    public var dialTypeface: DialTypeface
+
+    public init(style: FaceStyle = .fallback, color: FaceColor = .fallback,
                 digits: FaceDigits = .fallback, size: FaceSize = .fallback,
                 typeface: FaceTypeface = .fallback, weight: FaceWeight = .fallback,
-                ink: FaceInk = .fallback, outline: FaceOutline = .fallback, place: FacePlace = .fallback,
-                last: FaceLast = .fallback, done: FaceDone = .fallback, ticks: FaceTicks = .fallback) {
-        self.style = style; self.color = color; self.fill = fill; self.direction = direction
-        self.ground = ground; self.digits = digits; self.size = size; self.typeface = typeface
-        self.weight = weight; self.ink = ink; self.outline = outline; self.place = place
-        self.last = last; self.done = done; self.ticks = ticks
+                outline: FaceOutline = .fallback, place: FacePlace = .fallback,
+                dialContent: DialContent = .fallback, dialMark: DialMark = .fallback,
+                dialRing: DialRing = .fallback, dialTint: DialTint = .fallback,
+                dialSize: DialSize = .fallback, dialTypeface: DialTypeface = .fallback) {
+        self.style = style; self.color = color; self.digits = digits; self.size = size
+        self.typeface = typeface; self.weight = weight; self.outline = outline; self.place = place
+        self.dialContent = dialContent; self.dialMark = dialMark; self.dialRing = dialRing
+        self.dialTint = dialTint; self.dialSize = dialSize; self.dialTypeface = dialTypeface
     }
 
-    /// 1.1 までの見た目（色だけ選べた頃）と同じ組み合わせ
+    /// 1.2 までの見た目（色だけ選べた頃）と同じ組み合わせ
     public static let standard = FaceDesign()
 
-    /// 1行で表す（例：`Y1 C1 G1 D1 B1 N1 S3 T1 F3 K1 O1 P1 L1 E1 M1`）
+    /// 1行で表す（例：`Y1 C1 N1 S3 T1 F3 O1 P1 W1 I1 R1 V1 U2 J1`）
     public var text: String {
-        [style.code, color.code, fill.code, direction.code, ground.code, digits.code, size.code,
-         typeface.code, weight.code, ink.code, outline.code, place.code, last.code, done.code,
-         ticks.code].joined(separator: " ")
+        [style.code, color.code, digits.code, size.code, typeface.code, weight.code,
+         outline.code, place.code,
+         dialContent.code, dialMark.code, dialRing.code, dialTint.code, dialSize.code,
+         dialTypeface.code].joined(separator: " ")
     }
 
     /// 1行から戻す。**知らない番号は既定に落とす**（選択肢を消しても壊れない）
@@ -291,12 +327,13 @@ public struct FaceDesign: Codable, Equatable, Sendable {
         func pick<T: NumberedChoice>(_ t: T.Type) -> T {
             T.allCases.first { codes.contains($0.code) } ?? .fallback
         }
-        self.init(style: pick(FaceStyle.self), color: pick(FaceColor.self), fill: pick(FaceFill.self),
-                  direction: pick(FaceDirection.self), ground: pick(FaceGround.self),
+        self.init(style: pick(FaceStyle.self), color: pick(FaceColor.self),
                   digits: pick(FaceDigits.self), size: pick(FaceSize.self),
                   typeface: pick(FaceTypeface.self), weight: pick(FaceWeight.self),
-                  ink: pick(FaceInk.self), outline: pick(FaceOutline.self), place: pick(FacePlace.self),
-                  last: pick(FaceLast.self), done: pick(FaceDone.self), ticks: pick(FaceTicks.self))
+                  outline: pick(FaceOutline.self), place: pick(FacePlace.self),
+                  dialContent: pick(DialContent.self), dialMark: pick(DialMark.self),
+                  dialRing: pick(DialRing.self), dialTint: pick(DialTint.self),
+                  dialSize: pick(DialSize.self), dialTypeface: pick(DialTypeface.self))
     }
 
     /// 色の組。水・終わりが近い色・終わった画面はここから取る
