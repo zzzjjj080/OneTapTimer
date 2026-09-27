@@ -32,6 +32,9 @@ public struct DesignEditor: View {
             ScrollView {
                 VStack(spacing: 22) {
                     section("文字盤")
+                    // **色は文字盤とアプリで共通。** 両方の並びに出す
+                    // （文字盤の所に無いと「色は変えられない」と見える。2026-09-27 本人の指摘）
+                    row("色", \.color, dial: true)
                     row("中身", \.dialContent)
                     row("絵", \.dialMark)
                     row("輪", \.dialRing)
@@ -92,9 +95,11 @@ public struct DesignEditor: View {
             .padding(.top, 6)
     }
 
-    /// 1種類ぶんの横並び。**見本はその項目だけを差し替えたもの**（ほかはいまの設定のまま）
+    /// 1種類ぶんの横並び。**見本はその項目だけを差し替えたもの**（ほかはいまの設定のまま）。
+    /// `dial` を渡すと、その並びの見本を文字盤の丸で描く（色のように両方に出る項目のため）
     private func row<T: NumberedChoice>(_ title: LocalizedStringKey,
-                                        _ key: WritableKeyPath<FaceDesign, T>) -> some View {
+                                        _ key: WritableKeyPath<FaceDesign, T>,
+                                        dial: Bool? = nil) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title, bundle: .module)
                 .font(.system(size: 14, weight: .semibold))
@@ -106,7 +111,7 @@ public struct DesignEditor: View {
                     ForEach(T.allCases) { choice in
                         Chip(design: changing(key, to: choice), code: choice.code,
                              chosen: design[keyPath: key] == choice,
-                             dial: Self.isDial(key), duration: duration) {
+                             dial: dial ?? Self.isDial(key), duration: duration) {
                             design[keyPath: key] = choice
                         }
                     }
