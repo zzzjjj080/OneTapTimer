@@ -377,7 +377,6 @@ public final class Runner {
     ///     OTT_STATE=paused:62    残り62秒で一時停止中
     ///     OTT_STATE=cancelled    長押しで止めた直後
     ///     OTT_STATE=settings     設定を開いた
-    ///     OTT_STATE=tip          設定から投げ銭の画面まで開いた
     public func applyDebugState(_ spec: String, now: Date = .now) {
         let parts = spec.split(separator: ":")
         let n = parts.count > 1 ? Double(parts[1]) ?? 0 : 0
@@ -401,7 +400,7 @@ public final class Runner {
             engine.cancel(at: now)
             notifier.cancel()
             stopTicking()
-        case "settings", "tip":
+        case "settings":
             screen = .settings
         default:
             break

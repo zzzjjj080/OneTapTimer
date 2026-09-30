@@ -143,22 +143,21 @@ struct StepButton: View {
 }
 
 
-/// 設定画面の下段。**「完了」（横長）と ♡（投げ銭）。**
+/// 設定画面の下段。**「完了」だけ。**
 ///
-/// **1.3 で色ボタンを外した。** 見た目は iPhone アプリで決める（Watch の画面は狭いので操作を増やさない）。
+/// **1.3 で色ボタンを、1.4 で ♡（投げ銭）を外した。**
+/// 見た目は iPhone アプリで決める（Watch の画面は狭いので操作を増やさない）。
 /// 完了は幅いっぱいにして、いちばん押しやすい場所にする。
 public struct SettingsFooter: View {
     public var theme: ThemeHex
     public var height: CGFloat
     public var spacing: CGFloat
     public var onDone: () -> Void
-    /// ♡（投げ銭）。渡さなければ出さない
-    public var onTip: (() -> Void)?
 
     public init(theme: ThemeHex, height: CGFloat, spacing: CGFloat,
-                onDone: @escaping () -> Void, onTip: (() -> Void)? = nil) {
+                onDone: @escaping () -> Void) {
         self.theme = theme; self.height = height; self.spacing = spacing
-        self.onDone = onDone; self.onTip = onTip
+        self.onDone = onDone
     }
 
     private var fill: LinearGradient {
@@ -181,23 +180,6 @@ public struct SettingsFooter: View {
             .buttonStyle(.plain)
             .accessibilityIdentifier("go")
 
-            // **♡ は色の丸と同じ大きさで右端に。** 「完了」を真ん中に挟んで左右が釣り合う。
-            // 塗らずに輪郭だけにしてあるのは、押してほしいのは「完了」だから
-            if let onTip {
-                Button(action: onTip) {
-                    ZStack {
-                        Circle().stroke(Color(hex: theme.liquidTop).opacity(0.75), lineWidth: max(1.5, height * 0.045))
-                        Image(systemName: "heart.fill")
-                            .font(.system(size: height * 0.38, weight: .semibold))
-                            .foregroundStyle(Color(hex: theme.liquidTop))
-                    }
-                    .frame(width: height, height: height)
-                    .contentShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("気に入ったら", bundle: .module))
-                .accessibilityIdentifier("tip")
-            }
         }
     }
 }

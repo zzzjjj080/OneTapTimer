@@ -27,7 +27,7 @@ APP_ID = "6811255797"
 # 画像の並び。**Watch と iPhone で中身が違う**（1.3 から iPhone は見た目を決める画面だけ）
 SHOTS = {
     "APP_WATCH_SERIES_10": ("watch", ["running", "paused", "done", "settings"]),
-    "APP_IPHONE_67": ("phone", ["dial", "face", "looks", "tip"]),
+    "APP_IPHONE_67": ("phone", ["dial", "face", "looks", "looks2"]),
 }
 
 

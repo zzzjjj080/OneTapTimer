@@ -18,11 +18,15 @@ public struct DesignEditor: View {
     @Binding public var design: FaceDesign
     /// 見本に出す秒数（設定してある長さ）。文字盤の見本に出る
     public var duration: Int
-    public var onTip: (() -> Void)?
 
-    public init(design: Binding<FaceDesign>, duration: Int, onTip: (() -> Void)? = nil) {
-        self._design = design; self.duration = duration; self.onTip = onTip
+    public init(design: Binding<FaceDesign>, duration: Int) {
+        self._design = design; self.duration = duration
     }
+
+    /// 作者の他のアプリ（App Store の開発者ページ）。
+    /// **1.4 で投げ銭をやめ、その場所をここに替えた**（2026-09-30 本人決定）。
+    /// 押すと App Store が開く。アプリ自身は通信しない
+    static let otherApps = URL(string: "https://apps.apple.com/jp/developer/jin-nakamura/id6802013586")!
 
     public var body: some View {
         VStack(spacing: 0) {
@@ -61,23 +65,24 @@ public struct DesignEditor: View {
                     .buttonStyle(.plain)
                     .padding(.top, 4)
 
-                    if let onTip {
-                        Button(action: onTip) {
-                            Image(systemName: "heart")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundStyle(Color(hex: design.theme.liquidTop))
-                                .frame(width: 52, height: 40)
-                                .background(Capsule().fill(Color.white.opacity(0.08)))
+                    // **1行の控えめなリンク。** 押すと App Store の開発者ページが開く
+                    Link(destination: Self.otherApps) {
+                        HStack(spacing: 6) {
+                            Text("作者の他のアプリ", bundle: .module)
+                            Image(systemName: "arrow.up.forward")
+                                .font(.system(size: 11, weight: .semibold))
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("tip")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color(hex: PaletteHex.ink).opacity(0.55))
                     }
+                    .accessibilityIdentifier("otherApps")
 
                     Text(BuildStamp.text)
                         .font(.system(size: 12, weight: .medium))
                         .monospacedDigit()
                         .foregroundStyle(Color(hex: PaletteHex.ink).opacity(0.35))
                         .accessibilityIdentifier("buildStamp")
+                        .id("いちばん下")
                         .padding(.bottom, 24)
                 }
                 .padding(.top, 16)
@@ -85,8 +90,10 @@ public struct DesignEditor: View {
             .onAppear {
                 #if DEBUG
                 // 撮影用。**リリース構成には入らない**（`OTT_SHOT=face` でアプリの画面の並びまで送る）
-                if ProcessInfo.processInfo.environment["OTT_SHOT"] == "face" {
-                    scroll.scrollTo("アプリの画面", anchor: .top)
+                switch ProcessInfo.processInfo.environment["OTT_SHOT"] {
+                case "face": scroll.scrollTo("アプリの画面", anchor: .top)
+                case "bottom": scroll.scrollTo("いちばん下", anchor: .bottom)
+                default: break
                 }
                 #endif
             }

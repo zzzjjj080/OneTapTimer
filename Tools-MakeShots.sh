@@ -41,14 +41,11 @@ if [ "$WHAT" = all ] || [ "$WHAT" = phone ]; then
     lang=${pair%%:*}; dir=$ROOT/${pair##*:}
     shot "$PHONE" "$PHONE_ID" "$lang" "$dir/phone-dial.png"
     shot "$PHONE" "$PHONE_ID" "$lang" "$dir/phone-face.png" SIMCTL_CHILD_OTT_SHOT=face
-    # **投げ銭は既定の見た目で撮る**（前の撮影の色が残らないよう、毎回入れ直す）。
-    # 価格は見本の固定値。シミュレータの地域で $0.99 になると、画像ごとに通貨がばらつく
-    shot "$PHONE" "$PHONE_ID" "$lang" "$dir/phone-tip.png" SIMCTL_CHILD_OTT_STATE=tip \
-      SIMCTL_CHILD_OTT_TIP_SAMPLE="$([ "$lang" = ja ] && echo '¥200' || echo '$1.99')" \
-      SIMCTL_CHILD_OTT_DESIGN="$STANDARD"
-    # 見た目を変えられることが伝わる1枚（最後に撮る。次の撮影の前に既定へ戻す）
+    # 見た目を変えられることが伝わる2枚（**最後に撮る。** 次の撮影の前に既定へ戻す）
     shot "$PHONE" "$PHONE_ID" "$lang" "$dir/phone-looks.png" \
       SIMCTL_CHILD_OTT_DESIGN="Y2 C5 N2 S4 T1 F3 O1 P1 W2 I2 R3 V3 U3 J1"
+    shot "$PHONE" "$PHONE_ID" "$lang" "$dir/phone-looks2.png" \
+      SIMCTL_CHILD_OTT_DESIGN="Y3 C8 N3 S2 T4 F2 O3 P3 W3 I3 R4 V2 U1 J3"
   done
   # 見た目を既定に戻しておく（次に撮るときに前の色が残らない）
   xcrun simctl terminate "$PHONE" "$PHONE_ID" >/dev/null 2>&1 || true

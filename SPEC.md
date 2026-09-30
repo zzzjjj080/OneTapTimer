@@ -113,21 +113,19 @@ UserDefaults。`duration`（秒）と `engine`（JSON：duration / endAt / finis
 - 単色に着色される文字盤ではマークだけに色が乗る（`widgetAccentable`）
 - **`GeometryReader` を使わない。** 枠が小さく 0 や NaN が返ることがある（引き継ぎ書 4-86）
 
-## 投げ銭（1.2 から）
+## 作者の他のアプリ（1.4 から。投げ銭の跡地）
 
-設定のいちばん下のハートから開く。**買っても機能は変わらない。**
+**投げ銭は 1.4 でやめた**（2026-09-30 本人決定・副業禁止のため）。
 
 | 決めごと | 中身 |
 |---|---|
-| 製品 | `com.zzzjjj080.OneTapTimer.coffee`（消耗型・¥200・175地域） |
-| 置き場所 | Watch と iPhone の設定、同じ位置 |
-| 金額の出し方 | StoreKit の `displayPrice` をそのまま。**アプリ側で「¥200」と決め打ちしない**（国で通貨も額も変わる） |
-| 杯数 | 端末の中だけ（`tipjar.cups`）。消耗型は復元されないので「この端末で」と書く |
-| 言葉 | 「寄付」「Donation」とは書かない（慈善団体への寄付は Apple の扱いが別） |
-| 撮影 | `SIMCTL_CHILD_OTT_STATE=tip`（設定から投げ銭の画面まで開く）。`OTT_TIP_SAMPLE` は DEBUG だけの見本価格 |
+| 置き場所 | iPhone の設定（見た目を決める画面）のいちばん下。1行の控えめなリンク |
+| 行き先 | https://apps.apple.com/jp/developer/jin-nakamura/id6802013586 |
+| Watch | **置かない。** watchOS から App Store の開発者ページは開けない |
+| 通信 | アプリ自身は通信しない。押したときに App Store が開くだけ |
 
-道具は `./Tools-MakeTip.py`（作る・`--status` で状態を見る）。
-文言は `store/listing.json` の `tip`、審査用スクショは `store/tip-review.png`。
+課金アイテム（`com.zzzjjj080.OneTapTimer.coffee`）の停止は **App Store Connect 側の作業**で、
+別のスレッド（口座登録）でやる。このリポジトリからは触らない。
 
 ## 見た目（1.3 から）
 
