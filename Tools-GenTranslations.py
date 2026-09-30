@@ -45,12 +45,8 @@ CATALOGS: dict[str, dict[str, object]] = {
         "タップで始める": plain("タップで始める"), "時間を変える": plain("時間を変える"),
         "一時停止": plain("一時停止"), "再開": plain("再開"),
         "色": plain("色"), "完了": plain("完了"),
-        # 投げ銭（設定の ♡）
-        "気に入ったら": plain("気に入ったら"), "コーヒーを奢る": plain("コーヒーを奢る"),
-        "ありがとうございます": plain("ありがとうございます"),
-        "うまくいきませんでした": plain("うまくいきませんでした"),
-        "いまは受け付けられません": plain("いまは受け付けられません"),
-        "閉じる": plain("閉じる"), "この端末で %lld": plain("この端末で %lld"),
+        # 設定のいちばん下のリンク（1.4 で投げ銭をここに替えた）
+        "作者の他のアプリ": plain("作者の他のアプリ"),
         # 見た目を決める画面（iPhone）。選択肢そのものは番号と絵なので、訳が要るのは種類の名前だけ
         "文字盤": plain("文字盤"), "アプリの画面": plain("アプリの画面"),
         "中身": plain("中身"), "絵": plain("絵"), "輪": plain("輪"),
@@ -128,6 +124,10 @@ for rel, keys in CATALOGS.items():
         # 使わなくなった言語は落とす（訳が中途半端に残ると、その言語だけ古い文言が出る）
         for lang in [l for l in locs if l not in LANGS]:
             del locs[lang]
+    # **使わなくなった文言も落とす。** 足すだけにしていたら、投げ銭をやめた後も
+    # 「コーヒーを奢る」がカタログに残っていた（2026-09-30）
+    for key in [k for k in doc["strings"] if k not in keys]:
+        del doc["strings"][key]
     changed |= write(path, json.dumps(doc, ensure_ascii=False, indent=2) + "\n")
 
 rows = ",\n".join(
