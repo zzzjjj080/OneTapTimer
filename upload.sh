@@ -11,7 +11,9 @@
 set -eo pipefail
 cd "$(dirname "$0")/OneTapTimer"
 
-security unlock-keychain -p intervaltimer ~/Library/Keychains/interval-dist.keychain-db 2>/dev/null || true
+# キーチェーンの合言葉はリポジトリに書かない（公開リポジトリ。引き継ぎ書 4-212）。
+# ~/.appstoreconnect/interval-dist.pw（600）から読む。
+security unlock-keychain -p "$(cat ~/.appstoreconnect/interval-dist.pw)" ~/Library/Keychains/interval-dist.keychain-db 2>/dev/null || true
 
 echo "→ アーカイブ"
 DIR=~/Library/Developer/Xcode/Archives/$(date +%Y-%m-%d)
